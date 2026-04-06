@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quarterly Director Review | The Children's Center</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   TCC Quarterly Director Review — Styles
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Nunito:wght@400;600;700;800;900&display=swap');
+
+:root {
+  --navy: #0F2B3C;
+  --navy-light: #1A3D52;
+  --teal: #1B7A6E;
+  --teal-light: #E8F5F2;
+  --gold: #C8A951;
+  --gold-light: #FBF5E5;
+  --cream: #FAF8F3;
+  --sand: #F0ECE3;
+  --white: #FFFFFF;
+  --text: #1A1A1A;
+  --text-light: #6B7280;
+  --text-muted: #9CA3AF;
+  --red: #C0392B;
+  --red-light: #FDE8E8;
+  --green: #27AE60;
+  --green-light: #E8F8EE;
+  --orange: #E67E22;
+  --orange-light: #FEF3E2;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --radius: 12px;
+  --radius-lg: 16px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* --- Header --- */
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 60%, var(--teal) 100%);
+  color: var(--white);
+  padding: 40px 24px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 40px;
+  background: var(--cream);
+  border-radius: 40px 40px 0 0;
+}
+.header-badge {
+  display: inline-block;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 4px 16px;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.header h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+.header p {
+  font-size: 0.92rem;
+  opacity: 0.8;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* --- Container --- */
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 20px 60px;
+}
+
+/* --- Selector Panel --- */
+.selector-panel {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  margin: -20px auto 32px;
+  max-width: 700px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.selector-panel .field { flex: 1; min-width: 180px; }
+.selector-panel label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+.selector-panel select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--sand);
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--cream);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+.selector-panel select:focus { outline: none; border-color: var(--teal); }
+.btn-generate {
+  padding: 10px 28px;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.btn-generate:hover { background: var(--teal); transform: translateY(-1px); }
+
+/* --- Action Bar --- */
+.action-bar {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+  flex-wrap: wrap;
+}
+.action-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.action-btn:hover { transform: translateY(-1px); }
+.action-btn.dark { background: var(--navy); color: var(--white); }
+.action-btn.accent { background: var(--teal); color: var(--white); }
+.action-btn.gold { background: var(--gold); color: var(--navy); }
+
+/* --- Director Bar --- */
+.director-bar {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 20px 28px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.director-bar h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+.tag {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.tag-navy { background: var(--navy); color: var(--white); }
+.tag-teal { background: var(--teal-light); color: var(--teal); }
+.tag-gold { background: var(--gold-light); color: #8B6914; }
+
+/* --- Info Grid (License + Enrollment) --- */
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+@media (max-width: 640px) { .info-grid { grid-template-columns: 1fr; } }
+
+.info-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--sand);
+}
+.info-card h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 16px;
+  color: var(--navy);
+}
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sand);
+}
+.info-row:last-child { border-bottom: none; }
+.info-row label { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+.info-row input {
+  width: 100px;
+  text-align: center;
+  padding: 6px 10px;
+  border: 2px solid var(--sand);
+  border-radius: 6px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 800;
+  background: var(--gold-light);
+  color: var(--navy);
+}
+.info-row input:focus { outline: none; border-color: var(--teal); }
+.info-row .col-header {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+.info-row .past-val {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  width: 80px;
+  text-align: center;
+}
+.btn-save {
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: var(--teal);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn-save:hover { background: var(--navy); }
+
+/* --- Section Title --- */
+.section-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.4rem;
+  font-weight: 400;
+  margin: 36px 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.section-title .line {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, var(--teal), transparent);
+}
+
+/* --- Metrics Table --- */
+.metrics-wrap {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--sand);
+  margin-bottom: 32px;
+}
+.metrics-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.metrics-wrap thead th {
+  background: var(--gold-light);
+  color: var(--navy);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 12px 10px;
+  text-align: center;
+  border-bottom: 2px solid var(--gold);
+}
+.metrics-wrap thead th:first-child { text-align: left; padding-left: 20px; }
+.metrics-wrap tbody td {
+  padding: 10px;
+  text-align: center;
+  border-bottom: 1px solid var(--sand);
+  font-weight: 700;
+}
+.metrics-wrap tbody td:first-child {
+  text-align: left;
+  padding-left: 20px;
+  font-weight: 800;
+  color: var(--navy);
+}
+.metrics-wrap tbody tr:hover { background: var(--cream); }
+.metrics-wrap tfoot td {
+  padding: 12px 10px;
+  background: var(--navy);
+  color: var(--white);
+  font-weight: 800;
+  text-align: center;
+  font-size: 0.85rem;
+}
+.metrics-wrap tfoot td:first-child { text-align: left; padding-left: 20px; }
+
+/* Status icons */
+.ic-pass { color: var(--green); font-size: 1.1rem; }
+.ic-fail { color: var(--red); font-size: 1.1rem; }
+.ic-warn { color: var(--orange); font-size: 1.1rem; }
+.rate-good { background: var(--green-light); color: var(--green); padding: 3px 10px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; }
+.rate-warn { background: var(--orange-light); color: var(--orange); padding: 3px 10px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; }
+.rate-bad { background: var(--red-light); color: var(--red); padding: 3px 10px; border-radius: 50px; font-size: 0.8rem; font-weight: 800; }
+
+/* --- Compliance Section --- */
+.compliance-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+@media (max-width: 640px) { .compliance-grid { grid-template-columns: 1fr; } }
+.compliance-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--sand);
+}
+.compliance-card h4 {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 14px;
+}
+.compliance-card table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.compliance-card th {
+  text-align: left;
+  padding: 6px 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-light);
+  border-bottom: 2px solid var(--sand);
+}
+.compliance-card td { padding: 8px; border-bottom: 1px solid var(--sand); font-weight: 600; }
+.admin-status {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.92rem;
+}
+.admin-complete { background: var(--green-light); color: var(--green); }
+.admin-missing { background: var(--orange-light); color: var(--orange); }
+
+/* --- Chart Grid --- */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 640px) { .chart-row { grid-template-columns: 1fr; } }
+.chart-panel {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--sand);
+}
+.chart-panel h4 {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.chart-wrap { position: relative; height: 220px; }
+.chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* --- Attendance Upload --- */
+.upload-panel {
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  border: 2px dashed var(--sand);
+  margin-bottom: 32px;
+  text-align: center;
+}
+.upload-panel.drag-over { border-color: var(--teal); background: var(--teal-light); }
+.upload-panel h4 { font-size: 0.92rem; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+.upload-panel p { font-size: 0.82rem; color: var(--text-light); margin-bottom: 12px; }
+.upload-panel input[type="file"] { display: none; }
+.btn-upload {
+  display: inline-block;
+  padding: 10px 24px;
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.btn-upload:hover { background: var(--navy); color: var(--white); }
+.upload-result {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: left;
+  display: none;
+}
+.upload-result.success { background: var(--green-light); color: var(--green); display: block; }
+.upload-result.error { background: var(--red-light); color: var(--red); display: block; }
+
+/* --- Narrative Review --- */
+.review-panel {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  color: var(--white);
+  margin-top: 32px;
+  box-shadow: var(--shadow-lg);
+}
+.review-panel h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+.review-panel .subtitle {
+  font-size: 0.82rem;
+  opacity: 0.7;
+  margin-bottom: 24px;
+}
+.review-section h3 {
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 20px 0 10px;
+}
+.review-section p { font-size: 0.9rem; line-height: 1.7; margin-bottom: 8px; }
+.review-section .highlight {
+  background: rgba(255,255,255,0.08);
+  border-left: 3px solid var(--gold);
+  padding: 10px 16px;
+  margin: 8px 0;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  font-size: 0.88rem;
+}
+.review-section .starter {
+  background: rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 6px 0;
+  font-size: 0.88rem;
+}
+.emoji-badge { font-style: normal; }
+
+/* --- Toast --- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--white);
+  z-index: 9999;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease-out;
+  transition: opacity 0.3s;
+}
+.toast.success { background: var(--green); }
+.toast.error { background: var(--red); }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* --- Loading --- */
+.loading {
+  text-align: center;
+  padding: 60px;
+  color: var(--text-light);
+  font-weight: 700;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--sand);
+  border-top-color: var(--teal);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Print --- */
+@media print {
+  .header, .selector-panel, .action-bar, .upload-panel, .btn-save, .info-row input { break-inside: avoid; }
+  .action-bar, .btn-save, .upload-panel, .selector-panel { display: none !important; }
+  body { background: white; }
+  .container { max-width: 100%; padding: 0 10px; }
+  .review-panel { break-inside: avoid; }
+}
+
+/* --- Hidden --- */
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ====== HEADER ====== -->
+<div class="header">
+  <div class="header-badge">The Children's Center</div>
+  <h1>Quarterly Director Review</h1>
+  <p>Data-driven insights from Friday Director's Reports to guide quarterly one-on-one conversations.</p>
+</div>
+
+<!-- ====== MAIN ====== -->
+<div class="container">
+
+  <!-- Selector -->
+  <div class="selector-panel" id="selectorPanel">
+    <div class="field">
+      <label>Director / Location</label>
+      <select id="selDirector">
+        <option value="kirsten">Kirsten (Niles)</option>
+        <option value="gabby">Gabby (Peace)</option>
+        <option value="shari">Shari (Montessori)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Quarter</label>
+      <select id="selQuarter"></select>
+    </div>
+    <button class="btn-generate" id="btnGenerate" onclick="generateReview()">Generate Review</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading hidden" id="loadingDiv">
+    <div class="spinner"></div>
+    Loading report data...
+  </div>
+
+  <!-- Report Content (hidden until generated) -->
+  <div id="reportContent" class="hidden">
+
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <button class="action-btn dark" onclick="backToMenu()">← Back to Menu</button>
+      <button class="action-btn accent" onclick="window.print()">🖨️ Print Report</button>
+    </div>
+
+    <!-- Director Bar -->
+    <div class="director-bar" id="directorBar"></div>
+
+    <!-- License & Enrollment -->
+    <div class="info-grid" id="infoGrid">
+      <div class="info-card" id="licenseCard"></div>
+      <div class="info-card" id="enrollmentCard"></div>
+    </div>
+
+    <!-- Report Submission & Metrics -->
+    <h2 class="section-title">Report Submission &amp; Metrics <span class="line"></span></h2>
+    <div class="metrics-wrap" id="metricsTable"></div>
+
+    <!-- Compliance Checker -->
+    <h2 class="section-title">Compliance Checker <span class="line"></span></h2>
+    <div class="compliance-grid" id="complianceGrid"></div>
+
+    <!-- Attendance -->
+    <h2 class="section-title">Attendance Data <span class="line"></span></h2>
+    <div class="upload-panel" id="uploadPanel">
+      <h4>Upload Playground Attendance Export</h4>
+      <p>Drag & drop a CSV file or click to browse. The file will be processed automatically.</p>
+      <label class="btn-upload" for="attendanceFile">Choose CSV File</label>
+      <input type="file" id="attendanceFile" accept=".csv" onchange="handleAttendanceUpload(this)">
+      <div class="upload-result" id="uploadResult"></div>
+    </div>
+    <div id="attendanceData"></div>
+
+    <!-- Trend Analysis -->
+    <h2 class="section-title">Trend Analysis <span class="line"></span></h2>
+    <div class="chart-grid">
+      <div class="chart-panel">
+        <h4>Monthly Compliance Summary</h4>
+        <div class="chart-wrap"><canvas id="chartCompliance"></canvas></div>
+      </div>
+    </div>
+    <div class="chart-row" style="margin-top:20px;">
+      <div class="chart-panel">
+        <h4>Enrollment Trend</h4>
+        <div class="chart-wrap"><canvas id="chartEnrollment"></canvas></div>
+      </div>
+      <div class="chart-panel">
+        <h4>Quality Rating History</h4>
+        <div class="chart-wrap"><canvas id="chartQuality"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Auto-Generated Review -->
+    <div class="review-panel" id="reviewPanel"></div>
+
+    <!-- Bottom Action Bar -->
+    <div class="action-bar" style="margin-top:24px;">
+      <button class="action-btn dark" onclick="backToMenu()">← Back to Menu</button>
+      <button class="action-btn accent" onclick="window.print()">🖨️ Print Report</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  STATE
+// ============================================================
+var ALL_DATA = [], COMP_DATA = [];
+var CHARTS = {};
+var DIRECTORS = {
+  kirsten: { name: 'Kirsten', location: 'Niles', center: 'Niles', formName: 'Kirsten' },
+  gabby:   { name: 'Gabby', location: 'Peace', center: 'Peace Boulevard', formName: 'Gabby' },
+  shari:   { name: 'Shari', location: 'Montessori', center: 'Montessori', formName: 'Shari' }
+};
+
+// ============================================================
+//  INIT
+// ============================================================
+function init() {
+  populateQuarters();
+  // Check URL params for SSO
+  var params = new URLSearchParams(window.location.search);
+  var ssoUser = (params.get('user') || '').toLowerCase();
+  if (DIRECTORS[ssoUser]) {
+    document.getElementById('selDirector').value = ssoUser;
+  }
+}
+
+function populateQuarters() {
+  var sel = document.getElementById('selQuarter');
+  var now = new Date();
+  var year = now.getFullYear();
+  var month = now.getMonth();
+  var currentQ = Math.floor(month / 3) + 1;
+  var quarters = [];
+  
+  // Current + last 4 quarters
+  for (var i = 0; i < 5; i++) {
+    var q = currentQ - i;
+    var y = year;
+    while (q < 1) { q += 4; y--; }
+    quarters.push({ q: q, y: y });
+  }
+  
+  var qNames = { 1: 'Q1 (Jan – Mar)', 2: 'Q2 (Apr – Jun)', 3: 'Q3 (Jul – Sep)', 4: 'Q4 (Oct – Dec)' };
+  quarters.forEach(function(item, idx) {
+    var opt = document.createElement('option');
+    opt.value = item.q + '-' + item.y;
+    opt.textContent = item.y + ' ' + qNames[item.q];
+    if (idx === 0) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+// ============================================================
+//  GENERATE REVIEW
+// ============================================================
+async function generateReview() {
+  var dirKey = document.getElementById('selDirector').value;
+  var qVal = document.getElementById('selQuarter').value;
+  var parts = qVal.split('-');
+  var quarter = parseInt(parts[0]);
+  var year = parseInt(parts[1]);
+  var dir = DIRECTORS[dirKey];
+
+  document.getElementById('loadingDiv').classList.remove('hidden');
+  document.getElementById('reportContent').classList.add('hidden');
+
+  try {
+    // Fetch all data in parallel
+    var [reportRes, enrollRes, licRes, attendRes] = await Promise.all([
+      fetch('/api/report-data').then(r => r.json()),
+      fetch('/api/enrollment/' + dirKey).then(r => r.json()),
+      fetch('/api/license/' + dirKey).then(r => r.json()),
+      fetch('/api/attendance/' + dirKey).then(r => r.json())
+    ]);
+
+    if (reportRes.success) {
+      ALL_DATA = parseReportData(reportRes.headers, reportRes.rows);
+      COMP_DATA = reportRes.compliance || [];
+    }
+
+    var qStr = 'Q' + quarter + ' ' + year;
+    var qMonths = getQuarterMonths(quarter, year);
+    var dirRows = filterByDirector(ALL_DATA, dir);
+    var qRows = filterByQuarter(dirRows, qMonths);
+    var totalFridays = countFridaysInQuarter(quarter, year);
+
+    // Render all sections
+    renderDirectorBar(dir, qStr, qRows.length, totalFridays);
+    renderLicenseCard(dirKey, qStr, licRes.data || []);
+    renderEnrollmentCard(dirKey, qStr, enrollRes.data || []);
+    renderMetricsTable(qRows, qMonths, totalFridays);
+    renderCompliance(COMP_DATA, dir, qMonths);
+    renderAttendanceData(attendRes.data || [], qMonths);
+    renderCharts(qRows, qMonths, enrollRes.data || [], licRes.data || []);
+    renderNarrative(dir, qStr, qRows, totalFridays, COMP_DATA, qMonths, attendRes.data || []);
+
+    document.getElementById('reportContent').classList.remove('hidden');
+  } catch (err) {
+    console.error('Error generating review:', err);
+    toast('Error loading data: ' + err.message, 'error');
+  } finally {
+    document.getElementById('loadingDiv').classList.add('hidden');
+  }
+}
+
+// ============================================================
+//  DATA PARSING
+// ============================================================
+function parseReportData(headers, rows) {
+  if (!headers || !rows) return [];
+  return rows.map(function(row) {
+    var obj = {};
+    headers.forEach(function(h, i) { obj[h] = row[i] || ''; });
+    return obj;
+  });
+}
+
+function filterByDirector(data, dir) {
+  return data.filter(function(row) {
+    var ts = row['Timestamp'] || row['timestamp'] || '';
+    // Check all columns for director name
+    return Object.values(row).some(function(v) {
+      return String(v).toLowerCase().includes(dir.formName.toLowerCase());
+    });
+  });
+}
+
+function filterByQuarter(rows, qMonths) {
+  return rows.filter(function(row) {
+    var ts = row['Timestamp'] || row['timestamp'] || '';
+    if (!ts) return false;
+    var d = new Date(ts);
+    if (isNaN(d)) return false;
+    var m = d.getMonth() + 1;
+    var y = d.getFullYear();
+    return qMonths.some(function(qm) { return qm.month === m && qm.year === y; });
+  });
+}
+
+function getQuarterMonths(q, y) {
+  var startMonth = (q - 1) * 3 + 1;
+  return [
+    { month: startMonth, year: y },
+    { month: startMonth + 1, year: y },
+    { month: startMonth + 2, year: y }
+  ];
+}
+
+function countFridaysInQuarter(q, y) {
+  var startMonth = (q - 1) * 3;
+  var count = 0;
+  for (var m = startMonth; m < startMonth + 3; m++) {
+    var d = new Date(y, m, 1);
+    while (d.getMonth() === m) {
+      if (d.getDay() === 5) count++;
+      d.setDate(d.getDate() + 1);
+    }
+  }
+  return count;
+}
+
+// ============================================================
+//  METRIC EXTRACTION — reads Friday Report form answers
+// ============================================================
+function extractMetrics(rows) {
+  var metrics = {
+    n2f: 0, spot: 0, ratios: 0, clean: 0, lic: 0,
+    asked_review: 0, got_review: 0, social: 0, visited: 0,
+    one_on_one: 0, coached: 0, recognition: 0,
+    total: rows.length
+  };
+  var strengths = [], focuses = [], support = [];
+
+  rows.forEach(function(r) {
+    var vals = Object.values(r).map(function(v) { return String(v).toLowerCase(); });
+    var allText = vals.join(' ');
+
+    // Match YES answers for each metric column
+    function hasYes(keywords) {
+      return Object.entries(r).some(function(e) {
+        var h = e[0].toLowerCase();
+        var v = String(e[1]).toLowerCase();
+        return keywords.some(function(k) { return h.includes(k); }) && (v === 'yes' || v === '✅' || v === 'true');
+      });
+    }
+
+    if (hasYes(['name-to-face', 'name to face', 'n2f'])) metrics.n2f++;
+    if (hasYes(['spot check', 'unannounced'])) metrics.spot++;
+    if (hasYes(['ratio'])) metrics.ratios++;
+    if (hasYes(['clean', 'inviting'])) metrics.clean++;
+    if (hasYes(['licensing', 'license issue'])) metrics.lic++;
+    if (hasYes(['asked for google', 'asked for a google', 'google review'])) metrics.asked_review++;
+    if (hasYes(['receive', 'received', 'got google', 'google reviews (1+)', 'reviews received'])) metrics.got_review++;
+    if (hasYes(['social media'])) metrics.social++;
+    if (hasYes(['visited every', 'visit every', 'classroom visit'])) metrics.visited++;
+    if (hasYes(['1-on-1', 'one-on-one', '1 on 1', 'observation feedback'])) metrics.one_on_one++;
+
+    // Extract text fields
+    Object.entries(r).forEach(function(e) {
+      var h = e[0].toLowerCase();
+      var v = String(e[1]).trim();
+      if (v && v.length > 3 && v.toLowerCase() !== 'n/a') {
+        if (h.includes('strength') || h.includes('highlight') || h.includes('proud') || h.includes('wins')) strengths.push(v);
+        if (h.includes('focus') || h.includes('goal') || h.includes('improve') || h.includes('work on')) focuses.push(v);
+        if (h.includes('support') || h.includes('need') || h.includes('help')) support.push(v);
+      }
+    });
+  });
+
+  // Convert lic to "no issues" — original tracks issues, we want clean rate
+  // If column tracks "any licensing issues" with Yes = issues found, invert
+  // For now assume it's tracking "no issues" positively
+  metrics.strengths = strengths;
+  metrics.focuses = focuses;
+  metrics.support = support;
+  return metrics;
+}
+
+function pct(num, den) {
+  if (!den) return 0;
+  return Math.round((num / den) * 100);
+}
+
+// ============================================================
+//  RENDER: Director Bar
+// ============================================================
+function renderDirectorBar(dir, qStr, reportCount, totalFridays) {
+  var rateClass = reportCount / totalFridays >= 0.7 ? 'tag-teal' : 'tag-gold';
+  document.getElementById('directorBar').innerHTML =
+    '<h2>' + esc(dir.name) + '</h2>' +
+    '<span class="tag tag-navy">' + esc(dir.location) + '</span>' +
+    '<span class="tag tag-teal">' + esc(qStr) + '</span>' +
+    '<span class="tag ' + rateClass + '">' + reportCount + ' / ' + totalFridays + ' Reports</span>';
+}
+
+// ============================================================
+//  RENDER: License Card
+// ============================================================
+function renderLicenseCard(dirKey, qStr, allLicense) {
+  var current = allLicense.find(function(r) { return r.quarter === qStr; }) || {};
+  document.getElementById('licenseCard').innerHTML =
+    '<h3>License & Quality Rating</h3>' +
+    '<div class="info-row"><label>Current License Status</label><input type="text" id="inpLicExpiry" value="' + esc(current.license_expiry || '') + '" placeholder="e.g. 1/2028"></div>' +
+    '<div class="info-row"><label>Great Start to Quality Level</label><input type="text" id="inpQuality" value="' + esc(current.quality_level || '') + '" placeholder="e.g. 5"></div>' +
+    '<button class="btn-save" onclick="saveLicense(\'' + dirKey + '\',\'' + esc(qStr) + '\')">Save</button>';
+}
+
+// ============================================================
+//  RENDER: Enrollment Card
+// ============================================================
+function renderEnrollmentCard(dirKey, qStr, allEnroll) {
+  var prev = getPreviousQuarter(qStr);
+  var current = allEnroll.find(function(r) { return r.quarter === qStr; }) || {};
+  var lastQ = allEnroll.find(function(r) { return r.quarter === prev; }) || {};
+
+  document.getElementById('enrollmentCard').innerHTML =
+    '<h3>Enrollment</h3>' +
+    '<div class="info-row"><label></label><span class="col-header">Last Quarter</span><span class="col-header">This Quarter</span></div>' +
+    '<div class="info-row"><label>Total Enrolled</label><span class="past-val">' + (lastQ.total_enrolled || '—') + '</span><input type="number" id="inpTotalEnroll" value="' + (current.total_enrolled || '') + '"></div>' +
+    '<div class="info-row"><label>Non-GSRP Enrolled</label><span class="past-val">' + (lastQ.non_gsrp_enrolled || '—') + '</span><input type="number" id="inpNonGsrp" value="' + (current.non_gsrp_enrolled || '') + '"></div>' +
+    '<div class="info-row"><label>GSRP Enrolled</label><span class="past-val">' + (lastQ.gsrp_enrolled || '—') + '</span><input type="number" id="inpGsrp" value="' + (current.gsrp_enrolled || '') + '"></div>' +
+    '<button class="btn-save" onclick="saveEnrollment(\'' + dirKey + '\',\'' + esc(qStr) + '\')">Save</button>';
+}
+
+function getPreviousQuarter(qStr) {
+  var m = qStr.match(/Q(\d)\s+(\d{4})/);
+  if (!m) return '';
+  var q = parseInt(m[1]), y = parseInt(m[2]);
+  q--; if (q < 1) { q = 4; y--; }
+  return 'Q' + q + ' ' + y;
+}
+
+// ============================================================
+//  RENDER: Metrics Table
+// ============================================================
+function renderMetricsTable(qRows, qMonths, totalFridays) {
+  var monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // Group rows by week (Friday date)
+  var weekBuckets = {};
+  qRows.forEach(function(r) {
+    var ts = r['Timestamp'] || '';
+    var d = new Date(ts);
+    if (isNaN(d)) return;
+    var key = (d.getMonth() + 1) + '/' + d.getDate();
+    if (!weekBuckets[key]) weekBuckets[key] = [];
+    weekBuckets[key].push(r);
+  });
+
+  var weekKeys = Object.keys(weekBuckets).sort(function(a, b) {
+    var da = new Date('2026/' + a), db = new Date('2026/' + b);
+    return da - db;
+  });
+
+  // Metrics to track
+  var metricDefs = [
+    { label: 'Name-to-Face Review', keys: ['name-to-face', 'name to face', 'n2f'] },
+    { label: 'Unannounced Spot Check', keys: ['spot check', 'unannounced'] },
+    { label: 'Asked for Google Review', keys: ['asked for google', 'asked for a google'] },
+    { label: 'Google Reviews (1+)', keys: ['receive', 'received', 'reviews (1+)', 'reviews received'] },
+    { label: 'Social Media Post', keys: ['social media'] },
+    { label: 'Visited Every Classroom', keys: ['visited every', 'visit every'] },
+    { label: 'Licensing Issues', keys: ['licensing', 'license issue'] },
+    { label: 'Maintained Ratios', keys: ['ratio'] },
+    { label: 'Rooms Clean & Inviting', keys: ['clean', 'inviting'] },
+    { label: '1-on-1 / Observation Feedback', keys: ['1-on-1', 'one-on-one', '1 on 1', 'observation'] }
+  ];
+
+  var thead = '<thead><tr><th>Metric</th>';
+  weekKeys.forEach(function(k) { thead += '<th>' + k + '</th>'; });
+  thead += '<th>Rate</th></tr></thead>';
+
+  var tbody = '<tbody>';
+  metricDefs.forEach(function(metric) {
+    var yesCount = 0;
+    tbody += '<tr><td>' + metric.label + '</td>';
+    weekKeys.forEach(function(wk) {
+      var rows = weekBuckets[wk];
+      var found = rows.some(function(r) {
+        return Object.entries(r).some(function(e) {
+          var h = e[0].toLowerCase();
+          var v = String(e[1]).toLowerCase();
+          return metric.keys.some(function(k) { return h.includes(k); }) && (v === 'yes' || v === '✅' || v === 'true');
+        });
+      });
+      if (found) {
+        yesCount++;
+        tbody += '<td><span class="ic-pass">✅</span></td>';
+      } else {
+        // Check if there's a warning/partial
+        var hasWarn = rows.some(function(r) {
+          return Object.entries(r).some(function(e) {
+            var h = e[0].toLowerCase();
+            var v = String(e[1]).toLowerCase();
+            return metric.keys.some(function(k) { return h.includes(k); }) && v && v !== 'no' && v !== 'false' && v !== 'yes' && v !== 'true' && v !== '✅' && v !== '❌';
+          });
+        });
+        if (hasWarn) {
+          tbody += '<td><span class="ic-warn">⚠️</span></td>';
+        } else {
+          tbody += '<td><span class="ic-fail">❌</span></td>';
+        }
+      }
+    });
+    var rate = weekKeys.length > 0 ? pct(yesCount, weekKeys.length) : 0;
+    var rateClass = rate >= 80 ? 'rate-good' : (rate >= 50 ? 'rate-warn' : 'rate-bad');
+    tbody += '<td><span class="' + rateClass + '">' + rate + '%</span></td></tr>';
+  });
+  tbody += '</tbody>';
+
+  var tfoot = '<tfoot><tr><td>Reports Submitted</td><td colspan="' + weekKeys.length + '">' +
+    qRows.length + ' out of ' + totalFridays + ' Fridays</td><td><span class="' +
+    (pct(qRows.length, totalFridays) >= 80 ? 'rate-good' : pct(qRows.length, totalFridays) >= 50 ? 'rate-warn' : 'rate-bad') +
+    '">' + pct(qRows.length, totalFridays) + '%</span></td></tr></tfoot>';
+
+  document.getElementById('metricsTable').innerHTML = '<table>' + thead + tbody + tfoot + '</table>';
+}
+
+// ============================================================
+//  RENDER: Compliance
+// ============================================================
+function renderCompliance(compData, dir, qMonths) {
+  var grid = document.getElementById('complianceGrid');
+  if (!compData || compData.length === 0) {
+    grid.innerHTML = '<div class="compliance-card" style="grid-column:1/-1;"><p style="text-align:center;color:var(--text-light);padding:20px;">No compliance data available. Make sure the Apps Script includes the compliance tab.</p></div>';
+    return;
+  }
+
+  // Filter compliance data for this center and quarter
+  var centerName = dir.location.toLowerCase();
+  var monthNums = qMonths.map(function(m) { return m.month; });
+  var yearNum = qMonths[0].year;
+  var monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var monthAbbr = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  // compData is array of arrays: [Timestamp, Type, Center, Classroom, Inspector, Inspection Date, Pass, Fail, JSON Data]
+  var classroomInspections = [];
+  var adminInspections = [];
+
+  compData.forEach(function(row) {
+    var type = String(row[1] || '').toLowerCase();
+    var rowCenter = String(row[2] || '').toLowerCase();
+    var inspDate = String(row[5] || '');
+
+    if (!rowCenter.includes(centerName)) return;
+
+    // Check if inspection date falls in quarter
+    var d = new Date(inspDate);
+    if (isNaN(d)) return;
+    var m = d.getMonth() + 1;
+    var y = d.getFullYear();
+    if (y !== yearNum || monthNums.indexOf(m) === -1) return;
+
+    var record = {
+      type: type,
+      classroom: String(row[3] || ''),
+      inspector: String(row[4] || ''),
+      date: inspDate,
+      pass: parseInt(row[6]) || 0,
+      fail: parseInt(row[7]) || 0,
+      month: m
+    };
+
+    if (type.includes('admin')) {
+      adminInspections.push(record);
+    } else {
+      classroomInspections.push(record);
+    }
+  });
+
+  // Monthly classroom summary
+  var monthlyHtml = '<div class="compliance-card"><h4>Monthly Classroom Inspections</h4>';
+  if (classroomInspections.length === 0) {
+    monthlyHtml += '<p style="color:var(--text-muted);font-size:0.85rem;">No classroom inspections recorded this quarter.</p>';
+  } else {
+    monthlyHtml += '<table><tr><th>Month</th><th>Inspections</th><th>Classrooms</th><th>Passed</th><th>Failed</th></tr>';
+    var qTotals = { ins: 0, cls: 0, pass: 0, fail: 0 };
+
+    monthNums.forEach(function(mn) {
+      var monthRows = classroomInspections.filter(function(r) { return r.month === mn; });
+      var classrooms = new Set(monthRows.map(function(r) { return r.classroom; }));
+      var totalPass = monthRows.reduce(function(s, r) { return s + r.pass; }, 0);
+      var totalFail = monthRows.reduce(function(s, r) { return s + r.fail; }, 0);
+      qTotals.ins += monthRows.length;
+      qTotals.cls += classrooms.size;
+      qTotals.pass += totalPass;
+      qTotals.fail += totalFail;
+      monthlyHtml += '<tr><td>' + monthAbbr[mn] + '</td><td>' + monthRows.length + '</td><td>' + classrooms.size + '</td><td style="color:var(--green)">' + totalPass + '</td><td style="color:' + (totalFail > 0 ? 'var(--red)' : 'var(--green)') + '">' + totalFail + '</td></tr>';
+    });
+    monthlyHtml += '<tr style="font-weight:800;border-top:2px solid var(--sand);"><td>Total</td><td>' + qTotals.ins + '</td><td>' + qTotals.cls + '</td><td style="color:var(--green)">' + qTotals.pass + '</td><td style="color:' + (qTotals.fail > 0 ? 'var(--red)' : 'var(--green)') + '">' + qTotals.fail + '</td></tr>';
+    monthlyHtml += '</table>';
+  }
+  monthlyHtml += '</div>';
+
+  // Admin inspection
+  var adminHtml = '<div class="compliance-card"><h4>Admin Quarterly Inspection</h4>';
+  if (adminInspections.length === 0) {
+    adminHtml += '<div class="admin-status admin-missing">⚠️ Not Yet Completed</div>';
+    adminHtml += '<p style="margin-top:10px;font-size:0.82rem;color:var(--text-light);">No admin inspection recorded for this quarter.</p>';
+  } else {
+    var latest = adminInspections[adminInspections.length - 1];
+    adminHtml += '<div class="admin-status admin-complete">✅ Completed</div>';
+    adminHtml += '<table style="margin-top:12px;"><tr><th>Date</th><th>Inspector</th><th>Pass</th><th>Fail</th></tr>';
+    adminHtml += '<tr><td>' + esc(latest.date) + '</td><td>' + esc(latest.inspector) + '</td><td style="color:var(--green)">' + latest.pass + '</td><td style="color:' + (latest.fail > 0 ? 'var(--red)' : 'var(--green)') + '">' + latest.fail + '</td></tr></table>';
+  }
+  adminHtml += '</div>';
+
+  grid.innerHTML = monthlyHtml + adminHtml;
+}
+
+// ============================================================
+//  RENDER: Attendance Data
+// ============================================================
+function renderAttendanceData(data, qMonths) {
+  var container = document.getElementById('attendanceData');
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:0.85rem;text-align:center;">No attendance data uploaded yet for this center.</div>';
+    return;
+  }
+
+  var monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var qMonthKeys = qMonths.map(function(m) { return m.year + '-' + String(m.month).padStart(2, '0'); });
+  var qData = data.filter(function(r) { return qMonthKeys.indexOf(r.upload_month) !== -1; });
+
+  if (qData.length === 0) {
+    container.innerHTML = '<div style="padding:16px;color:var(--text-muted);font-size:0.85rem;text-align:center;">No attendance data for this quarter. Upload a Playground CSV above.</div>';
+    return;
+  }
+
+  var html = '<div class="metrics-wrap"><table><thead><tr><th>Month</th><th>Total Children</th><th>6+ Days</th>';
+
+  // Get all classrooms across the quarter
+  var allClassrooms = new Set();
+  qData.forEach(function(r) {
+    var bd = r.classroom_breakdown || {};
+    Object.keys(bd).forEach(function(c) { allClassrooms.add(c); });
+  });
+  var classrooms = Array.from(allClassrooms).sort();
+  classrooms.forEach(function(c) { html += '<th>' + esc(c) + '</th>'; });
+  html += '</tr></thead><tbody>';
+
+  qData.sort(function(a, b) { return a.upload_month.localeCompare(b.upload_month); });
+  qData.forEach(function(r) {
+    var parts = r.upload_month.split('-');
+    var mn = parseInt(parts[1]);
+    var bd = r.classroom_breakdown || {};
+    html += '<tr><td>' + monthNames[mn] + ' ' + parts[0] + '</td>';
+    html += '<td>' + r.total_children + '</td>';
+    html += '<td>' + r.children_6plus + '</td>';
+    classrooms.forEach(function(c) { html += '<td>' + (bd[c] || 0) + '</td>'; });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+// ============================================================
+//  RENDER: Charts
+// ============================================================
+function renderCharts(qRows, qMonths, enrollData, licData) {
+  if (typeof Chart === 'undefined') {
+    document.querySelectorAll('.chart-wrap').forEach(function(el) {
+      el.innerHTML = '<div class="chart-placeholder">Charts unavailable — Chart.js library did not load.</div>';
+    });
+    return;
+  }
+
+  // Destroy existing charts
+  Object.values(CHARTS).forEach(function(c) { if (c) c.destroy(); });
+  CHARTS = {};
+
+  renderComplianceChart(qRows, qMonths);
+  renderEnrollmentChart(enrollData);
+  renderQualityChart(licData);
+}
+
+function renderComplianceChart(qRows, qMonths) {
+  var monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var labels = qMonths.map(function(m) { return monthNames[m.month]; });
+
+  // Calculate compliance per month from row data
+  var monthlyRates = qMonths.map(function(qm) {
+    var monthRows = qRows.filter(function(r) {
+      var d = new Date(r['Timestamp'] || '');
+      return !isNaN(d) && d.getMonth() + 1 === qm.month && d.getFullYear() === qm.year;
+    });
+    if (monthRows.length === 0) return 0;
+
+    var metricKeys = [
+      ['name-to-face', 'name to face', 'n2f'],
+      ['spot check', 'unannounced'],
+      ['ratio'],
+      ['clean', 'inviting'],
+      ['licensing', 'license issue'],
+      ['visited every', 'visit every'],
+      ['social media'],
+      ['1-on-1', 'one-on-one', 'observation']
+    ];
+
+    var totalChecks = monthRows.length * metricKeys.length;
+    var totalYes = 0;
+    monthRows.forEach(function(r) {
+      metricKeys.forEach(function(keys) {
+        var found = Object.entries(r).some(function(e) {
+          var h = e[0].toLowerCase();
+          var v = String(e[1]).toLowerCase();
+          return keys.some(function(k) { return h.includes(k); }) && (v === 'yes' || v === '✅' || v === 'true');
+        });
+        if (found) totalYes++;
+      });
+    });
+    return totalChecks > 0 ? Math.round((totalYes / totalChecks) * 100) : 0;
+  });
+
+  var ctx = document.getElementById('chartCompliance');
+  if (!ctx) return;
+  CHARTS.compliance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Compliance %',
+        data: monthlyRates,
+        backgroundColor: monthlyRates.map(function(v) { return v >= 80 ? '#27AE60' : v >= 50 ? '#E67E22' : '#C0392B'; }),
+        borderRadius: 6,
+        barThickness: 48
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: function(v) { return v + '%'; } } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderEnrollmentChart(enrollData) {
+  var ctx = document.getElementById('chartEnrollment');
+  if (!ctx) return;
+  if (!enrollData || enrollData.length === 0) {
+    ctx.parentElement.innerHTML = '<div class="chart-placeholder">Enter enrollment data above to see trends.</div>';
+    return;
+  }
+
+  var sorted = enrollData.filter(function(r) { return r.total_enrolled; })
+    .sort(function(a, b) { return a.quarter.localeCompare(b.quarter); });
+  if (sorted.length === 0) {
+    ctx.parentElement.innerHTML = '<div class="chart-placeholder">Enter enrollment data above to see trends.</div>';
+    return;
+  }
+
+  CHARTS.enrollment = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sorted.map(function(r) { return r.quarter; }),
+      datasets: [
+        { label: 'Total', data: sorted.map(function(r) { return r.total_enrolled; }), borderColor: '#0F2B3C', backgroundColor: 'rgba(15,43,60,0.1)', fill: true, tension: 0.3, pointRadius: 5 },
+        { label: 'Non-GSRP', data: sorted.map(function(r) { return r.non_gsrp_enrolled; }), borderColor: '#1B7A6E', tension: 0.3, pointRadius: 4 },
+        { label: 'GSRP', data: sorted.map(function(r) { return r.gsrp_enrolled; }), borderColor: '#C8A951', tension: 0.3, pointRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 16 } } },
+      scales: { y: { beginAtZero: true }, x: { grid: { display: false } } }
+    }
+  });
+}
+
+function renderQualityChart(licData) {
+  var ctx = document.getElementById('chartQuality');
+  if (!ctx) return;
+  if (!licData || licData.length === 0) {
+    ctx.parentElement.innerHTML = '<div class="chart-placeholder">Enter quality rating above to see history.</div>';
+    return;
+  }
+
+  var sorted = licData.filter(function(r) { return r.quality_level; })
+    .sort(function(a, b) { return a.quarter.localeCompare(b.quarter); });
+  if (sorted.length === 0) {
+    ctx.parentElement.innerHTML = '<div class="chart-placeholder">Enter quality rating above to see history.</div>';
+    return;
+  }
+
+  var levels = sorted.map(function(r) {
+    var v = String(r.quality_level).replace(/[^0-9.]/g, '');
+    return parseFloat(v) || 0;
+  });
+
+  CHARTS.quality = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sorted.map(function(r) { return r.quarter; }),
+      datasets: [{
+        label: 'Star Rating',
+        data: levels,
+        borderColor: '#C8A951',
+        backgroundColor: 'rgba(200,169,81,0.15)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 6,
+        pointBackgroundColor: '#C8A951'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 0, max: 5, ticks: { stepSize: 1, callback: function(v) { return v + ' ★'; } } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ============================================================
+//  RENDER: Auto-Generated Narrative
+// ============================================================
+function renderNarrative(dir, qStr, qRows, totalFridays, compData, qMonths, attendData) {
+  var m = extractMetrics(qRows);
+  var n = m.total;
+  var panel = document.getElementById('reviewPanel');
+
+  // Overall compliance rate
+  var metricRates = [
+    pct(m.n2f, n), pct(m.spot, n), pct(m.ratios, n), pct(m.clean, n),
+    pct(m.asked_review, n), pct(m.social, n), pct(m.visited, n), pct(m.one_on_one, n)
+  ];
+  var overallCompliance = metricRates.length > 0 ? Math.round(metricRates.reduce(function(s, v) { return s + v; }, 0) / metricRates.length) : 0;
+
+  // Trend direction
+  var firstHalf = qRows.slice(0, Math.ceil(qRows.length / 2));
+  var secondHalf = qRows.slice(Math.ceil(qRows.length / 2));
+  var firstRate = calcOverallRate(firstHalf);
+  var secondRate = calcOverallRate(secondHalf);
+  var trend = secondRate > firstRate + 5 ? 'improving' : secondRate < firstRate - 5 ? 'declining' : 'steady';
+
+  function grade(v) { return v >= 80 ? 'Strong' : v >= 50 ? 'Developing' : 'Needs Attention'; }
+  function emoji(v) { return v >= 80 ? '<span class="emoji-badge">✅</span>' : '<span class="emoji-badge">🔴</span>'; }
+
+  var html = '<h2>Quarterly Review: ' + esc(dir.name) + '</h2>';
+  html += '<div class="subtitle">' + qMonthLabel(qMonths) + ' · ' + esc(dir.location) + ' · ' + n + ' of ' + totalFridays + ' Reports Submitted (' + pct(n, totalFridays) + '%)</div>';
+
+  html += '<div class="review-section">';
+
+  // Overall
+  html += '<h3>Overall Performance</h3>';
+  html += '<p>' + esc(dir.name) + ' submitted <strong>' + n + ' of ' + totalFridays + ' weekly reports</strong> (' + pct(n, totalFridays) + '%) with an overall compliance rate of <strong>' + overallCompliance + '%</strong>. The overall trend is <strong>' + trend + '</strong>';
+  if (trend === 'improving') html += ' — compliance improved from ' + firstRate + '% to ' + secondRate + '%, showing meaningful growth.';
+  else if (trend === 'declining') html += ' — compliance moved from ' + firstRate + '% to ' + secondRate + '%, indicating areas that need focused attention.';
+  else html += ', showing consistency across the period.';
+  html += '</p>';
+
+  // Supervision & Safety
+  html += '<h3>Supervision &amp; Safety</h3>';
+  html += '<p>' + emoji(pct(m.n2f, n)) + ' <strong>Name-to-Face Reviews:</strong> ' + pct(m.n2f, n) + '% — ' + grade(pct(m.n2f, n)) + '</p>';
+  html += '<p>' + emoji(pct(m.spot, n)) + ' <strong>Unannounced Spot Checks:</strong> ' + pct(m.spot, n) + '% — ' + grade(pct(m.spot, n)) + '</p>';
+  html += '<p>' + emoji(pct(m.ratios, n)) + ' <strong>Ratios Maintained:</strong> ' + pct(m.ratios, n) + '% — ' + grade(pct(m.ratios, n)) + '</p>';
+  html += '<p>' + emoji(pct(m.clean, n)) + ' <strong>Rooms Clean &amp; Inviting:</strong> ' + pct(m.clean, n) + '% — ' + grade(pct(m.clean, n)) + '</p>';
+  html += '<p>' + emoji(pct(m.lic, n)) + ' <strong>No Licensing Issues:</strong> ' + pct(m.lic, n) + '% — ' + grade(pct(m.lic, n)) + '</p>';
+
+  // Community & Engagement
+  html += '<h3>Community &amp; Engagement</h3>';
+  html += '<p>' + emoji(pct(m.asked_review, n)) + ' <strong>Asked for Google Review:</strong> ' + pct(m.asked_review, n) + '%</p>';
+  html += '<p>' + emoji(pct(m.got_review, n)) + ' <strong>Received Google Reviews (1+):</strong> ' + pct(m.got_review, n) + '%</p>';
+  html += '<p>' + emoji(pct(m.social, n)) + ' <strong>Social Media Posts:</strong> ' + pct(m.social, n) + '%</p>';
+  html += '<p>' + emoji(pct(m.visited, n)) + ' <strong>Visited Every Classroom:</strong> ' + pct(m.visited, n) + '%</p>';
+
+  // Staff Development
+  html += '<h3>Staff Development</h3>';
+  html += '<p>' + emoji(pct(m.one_on_one, n)) + ' <strong>1-on-1 / Observation Feedback:</strong> ' + pct(m.one_on_one, n) + '% — ' + grade(pct(m.one_on_one, n)) + '</p>';
+
+  // Highlighted Strengths
+  if (m.strengths.length > 0) {
+    html += '<h3>Highlighted Strengths</h3>';
+    m.strengths.slice(-3).forEach(function(s) {
+      html += '<div class="highlight">"' + esc(s.substring(0, 250)) + '"</div>';
+    });
+  }
+
+  // Self-Identified Focus Areas
+  if (m.focuses.length > 0) {
+    html += '<h3>Self-Identified Focus Areas</h3>';
+    m.focuses.slice(-5).forEach(function(f) {
+      html += '<p>• ' + esc(f) + '</p>';
+    });
+  }
+
+  // Conversation Starters
+  html += '<h3>Suggested Conversation Starters</h3>';
+  var starters = [];
+  if (pct(n, totalFridays) < 80) starters.push('Reports were submitted ' + pct(n, totalFridays) + '% of Fridays. What is getting in the way of consistent submission?');
+  if (pct(m.n2f, n) < 70) starters.push('Name-to-face consistency is at ' + pct(m.n2f, n) + '%. What barriers exist, and what support would help?');
+  if (pct(m.social, n) < 50) starters.push('Social media posting is at ' + pct(m.social, n) + '%. How can we make this easier for you or your team?');
+  if (pct(m.one_on_one, n) < 60) starters.push('1-on-1 meetings were at ' + pct(m.one_on_one, n) + '%. What is competing for that time?');
+  if (trend === 'improving') starters.push('Your compliance has trended upward this quarter. What do you think is driving that improvement?');
+  if (trend === 'declining') starters.push('Scores have dipped this quarter. What has been weighing on you, and where do you need more support?');
+  if (m.support.length >= 3) starters.push('You raised ' + m.support.length + ' support requests. Let\'s make sure nothing fell through the cracks.');
+  if (starters.length === 0) starters.push('Overall, this has been a solid quarter. What are you most proud of, and what would you like to focus on next?');
+
+  starters.forEach(function(s) {
+    html += '<div class="starter">💬 ' + esc(s) + '</div>';
+  });
+
+  html += '</div>';
+  panel.innerHTML = html;
+}
+
+function calcOverallRate(rows) {
+  if (rows.length === 0) return 0;
+  var m = extractMetrics(rows);
+  var n = m.total || 1;
+  var rates = [pct(m.n2f, n), pct(m.spot, n), pct(m.ratios, n), pct(m.clean, n), pct(m.social, n), pct(m.visited, n), pct(m.one_on_one, n)];
+  return Math.round(rates.reduce(function(s, v) { return s + v; }, 0) / rates.length);
+}
+
+function qMonthLabel(qMonths) {
+  var monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return monthNames[qMonths[0].month] + ' ' + qMonths[0].year + ' – ' + monthNames[qMonths[2].month] + ' ' + qMonths[2].year;
+}
+
+// ============================================================
+//  SAVE ACTIONS
+// ============================================================
+async function saveEnrollment(dirKey, qStr) {
+  var body = {
+    director: dirKey,
+    quarter: qStr,
+    total_enrolled: parseInt(document.getElementById('inpTotalEnroll').value) || 0,
+    non_gsrp_enrolled: parseInt(document.getElementById('inpNonGsrp').value) || 0,
+    gsrp_enrolled: parseInt(document.getElementById('inpGsrp').value) || 0
+  };
+  var res = await fetch('/api/enrollment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  var data = await res.json();
+  toast(data.success ? 'Enrollment saved!' : 'Error saving', data.success ? 'success' : 'error');
+}
+
+async function saveLicense(dirKey, qStr) {
+  var body = {
+    director: dirKey,
+    quarter: qStr,
+    license_expiry: document.getElementById('inpLicExpiry').value,
+    quality_level: document.getElementById('inpQuality').value
+  };
+  var res = await fetch('/api/license', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  var data = await res.json();
+  toast(data.success ? 'License data saved!' : 'Error saving', data.success ? 'success' : 'error');
+}
+
+// ============================================================
+//  ATTENDANCE UPLOAD
+// ============================================================
+async function handleAttendanceUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var dirKey = document.getElementById('selDirector').value;
+  var dir = DIRECTORS[dirKey];
+
+  var formData = new FormData();
+  formData.append('file', file);
+  formData.append('director', dirKey);
+  formData.append('center', dir.center);
+
+  var resultDiv = document.getElementById('uploadResult');
+  resultDiv.className = 'upload-result';
+  resultDiv.style.display = 'block';
+  resultDiv.textContent = 'Processing...';
+
+  try {
+    var res = await fetch('/api/attendance/upload', { method: 'POST', body: formData });
+    var data = await res.json();
+
+    if (data.success) {
+      var html = '<strong>Upload successful!</strong> Processed ' + data.months.length + ' month(s):<br>';
+      data.months.forEach(function(m) {
+        html += '• ' + m.month + ': ' + m.totalChildren + ' total children, ' + m.children6plus + ' with 6+ days<br>';
+      });
+      resultDiv.innerHTML = html;
+      resultDiv.className = 'upload-result success';
+      toast('Attendance uploaded!', 'success');
+
+      // Refresh attendance display
+      var attendRes = await fetch('/api/attendance/' + dirKey).then(function(r) { return r.json(); });
+      var qVal = document.getElementById('selQuarter').value;
+      var parts = qVal.split('-');
+      var qMonths = getQuarterMonths(parseInt(parts[0]), parseInt(parts[1]));
+      renderAttendanceData(attendRes.data || [], qMonths);
+    } else {
+      resultDiv.textContent = 'Error: ' + data.error;
+      resultDiv.className = 'upload-result error';
+    }
+  } catch (err) {
+    resultDiv.textContent = 'Upload failed: ' + err.message;
+    resultDiv.className = 'upload-result error';
+  }
+
+  input.value = '';
+}
+
+// ============================================================
+//  UTILITIES
+// ============================================================
+function backToMenu() {
+  document.getElementById('reportContent').classList.add('hidden');
+  document.getElementById('selectorPanel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function toast(msg, type) {
+  var el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function() { el.style.opacity = '0'; }, 2000);
+  setTimeout(function() { el.remove(); }, 2400);
+}
+
+function esc(s) {
+  var d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// Drag and drop support for upload
+document.addEventListener('DOMContentLoaded', function() {
+  var panel = document.getElementById('uploadPanel');
+  if (panel) {
+    panel.addEventListener('dragover', function(e) { e.preventDefault(); panel.classList.add('drag-over'); });
+    panel.addEventListener('dragleave', function() { panel.classList.remove('drag-over'); });
+    panel.addEventListener('drop', function(e) {
+      e.preventDefault();
+      panel.classList.remove('drag-over');
+      if (e.dataTransfer.files.length > 0) {
+        var input = document.getElementById('attendanceFile');
+        input.files = e.dataTransfer.files;
+        handleAttendanceUpload(input);
+      }
+    });
+  }
+});
+
+init();
+</script>
+</body>
+</html>
