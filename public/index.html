@@ -780,11 +780,10 @@ function parseReportData(headers, rows) {
 
 function filterByDirector(data, dir) {
   return data.filter(function(row) {
-    var ts = row['Timestamp'] || row['timestamp'] || '';
-    // Check all columns for director name
-    return Object.values(row).some(function(v) {
-      return String(v).toLowerCase().includes(dir.formName.toLowerCase());
-    });
+    var loc = String(row['Program Location'] || '').toLowerCase();
+    var centerLower = dir.center.toLowerCase();
+    var locationLower = dir.location.toLowerCase();
+    return loc.includes(centerLower) || loc.includes(locationLower);
   });
 }
 
@@ -829,50 +828,102 @@ function extractMetrics(rows) {
   var metrics = {
     n2f: 0, spot: 0, ratios: 0, clean: 0, lic: 0,
     asked_review: 0, got_review: 0, social: 0, visited: 0,
-    one_on_one: 0, coached: 0, recognition: 0,
+    one_on_one: 0,
     total: rows.length
   };
   var strengths = [], focuses = [], support = [];
 
-  rows.forEach(function(r) {
-    var vals = Object.values(r).map(function(v) { return String(v).toLowerCase(); });
-    var allText = vals.join(' ');
+  // Exact column header fragments from the Google Form
+  var COL = {
+    n2f:         'did you complete a full review of name-to-face',
+    spot:        'did you conduct at least one unannounced spot-check',
+    asked:       'did you ask at least one family or staff member',
+    reviews:     'how many new 4 or 5 st',
+    social:      'did you share at least one post',
+    visited:     'did you visit every classroom',
+    lic_issues:  'were there any licensing or compliance issues',
+    ratios:      'have all classrooms maintained required staff-to-child',
+    clean:       'were rooms clean and inviting',
+    one_on_one:  'did you complete at least one one-on-one',
+    strength:    'what is one area your team did well',
+    focus:       'what is one area your team will focus on improving',
+    support:     'do you have any urgent needs or support requests'
+  };
 
-    // Match YES answers for each metric column
-    function hasYes(keywords) {
-      return Object.entries(r).some(function(e) {
-        var h = e[0].toLowerCase();
-        var v = String(e[1]).toLowerCase();
-        return keywords.some(function(k) { return h.includes(k); }) && (v === 'yes' || v === '✅' || v === 'true');
-      });
+  function findCol(row, fragment) {
+    for (var key in row) {
+      if (key.toLowerCase().includes(fragment)) return { header: key, value: String(row[key]).trim() };
+    }
+    return null;
+  }
+
+  function isYes(val) {
+    var v = val.toLowerCase();
+    return v === 'yes' || v === '✅' || v === 'true';
+  }
+
+  function isNo(val) {
+    var v = val.toLowerCase();
+    return v === 'no' || v === '❌' || v === 'false' || v === 'none' || v === 'n/a' || v === '';
+  }
+
+  rows.forEach(function(r) {
+    var col;
+
+    // Name-to-Face Review — Yes = good
+    col = findCol(r, COL.n2f);
+    if (col && isYes(col.value)) metrics.n2f++;
+
+    // Unannounced Spot Check — Yes = good
+    col = findCol(r, COL.spot);
+    if (col && isYes(col.value)) metrics.spot++;
+
+    // Asked for Google Review — Yes = good
+    col = findCol(r, COL.asked);
+    if (col && isYes(col.value)) metrics.asked_review++;
+
+    // Google Reviews received — number > 0 = good
+    col = findCol(r, COL.reviews);
+    if (col) {
+      var num = parseInt(col.value);
+      if (num > 0) metrics.got_review++;
     }
 
-    if (hasYes(['name-to-face', 'name to face', 'n2f'])) metrics.n2f++;
-    if (hasYes(['spot check', 'unannounced'])) metrics.spot++;
-    if (hasYes(['ratio'])) metrics.ratios++;
-    if (hasYes(['clean', 'inviting'])) metrics.clean++;
-    if (hasYes(['licensing', 'license issue'])) metrics.lic++;
-    if (hasYes(['asked for google', 'asked for a google', 'google review'])) metrics.asked_review++;
-    if (hasYes(['receive', 'received', 'got google', 'google reviews (1+)', 'reviews received'])) metrics.got_review++;
-    if (hasYes(['social media'])) metrics.social++;
-    if (hasYes(['visited every', 'visit every', 'classroom visit'])) metrics.visited++;
-    if (hasYes(['1-on-1', 'one-on-one', '1 on 1', 'observation feedback'])) metrics.one_on_one++;
+    // Social Media Post — Yes = good
+    col = findCol(r, COL.social);
+    if (col && isYes(col.value)) metrics.social++;
 
-    // Extract text fields
-    Object.entries(r).forEach(function(e) {
-      var h = e[0].toLowerCase();
-      var v = String(e[1]).trim();
-      if (v && v.length > 3 && v.toLowerCase() !== 'n/a') {
-        if (h.includes('strength') || h.includes('highlight') || h.includes('proud') || h.includes('wins')) strengths.push(v);
-        if (h.includes('focus') || h.includes('goal') || h.includes('improve') || h.includes('work on')) focuses.push(v);
-        if (h.includes('support') || h.includes('need') || h.includes('help')) support.push(v);
-      }
-    });
+    // Visited Every Classroom — Yes = good
+    col = findCol(r, COL.visited);
+    if (col && isYes(col.value)) metrics.visited++;
+
+    // Licensing Issues — "No" = good (inverted: no issues is what we want)
+    col = findCol(r, COL.lic_issues);
+    if (col && isNo(col.value)) metrics.lic++;
+
+    // Maintained Ratios — Yes = good
+    col = findCol(r, COL.ratios);
+    if (col && isYes(col.value)) metrics.ratios++;
+
+    // Rooms Clean & Inviting — Yes = good
+    col = findCol(r, COL.clean);
+    if (col && isYes(col.value)) metrics.clean++;
+
+    // 1-on-1 / Observation Feedback — Yes = good
+    col = findCol(r, COL.one_on_one);
+    if (col && isYes(col.value)) metrics.one_on_one++;
+
+    // Text fields
+    col = findCol(r, COL.strength);
+    if (col && col.value.length > 3 && !isNo(col.value)) strengths.push(col.value);
+
+    col = findCol(r, COL.focus);
+    if (col && col.value.length > 3 && !isNo(col.value)) focuses.push(col.value);
+
+    col = findCol(r, COL.support);
+    if (col && col.value.length > 3 && !isNo(col.value)) support.push(col.value);
   });
 
-  // Convert lic to "no issues" — original tracks issues, we want clean rate
-  // If column tracks "any licensing issues" with Yes = issues found, invert
-  // For now assume it's tracking "no issues" positively
   metrics.strengths = strengths;
   metrics.focuses = focuses;
   metrics.support = support;
@@ -955,19 +1006,49 @@ function renderMetricsTable(qRows, qMonths, totalFridays) {
     return da - db;
   });
 
-  // Metrics to track
+  // Metrics to track — using exact form column fragments
+  // type: 'yes' means Yes=good, 'no' means No=good (inverted), 'number' means >0=good
   var metricDefs = [
-    { label: 'Name-to-Face Review', keys: ['name-to-face', 'name to face', 'n2f'] },
-    { label: 'Unannounced Spot Check', keys: ['spot check', 'unannounced'] },
-    { label: 'Asked for Google Review', keys: ['asked for google', 'asked for a google'] },
-    { label: 'Google Reviews (1+)', keys: ['receive', 'received', 'reviews (1+)', 'reviews received'] },
-    { label: 'Social Media Post', keys: ['social media'] },
-    { label: 'Visited Every Classroom', keys: ['visited every', 'visit every'] },
-    { label: 'Licensing Issues', keys: ['licensing', 'license issue'] },
-    { label: 'Maintained Ratios', keys: ['ratio'] },
-    { label: 'Rooms Clean & Inviting', keys: ['clean', 'inviting'] },
-    { label: '1-on-1 / Observation Feedback', keys: ['1-on-1', 'one-on-one', '1 on 1', 'observation'] }
+    { label: 'Name-to-Face Review', col: 'did you complete a full review of name-to-face', type: 'yes' },
+    { label: 'Unannounced Spot Check', col: 'did you conduct at least one unannounced spot-check', type: 'yes' },
+    { label: 'Asked for Google Review', col: 'did you ask at least one family or staff member', type: 'yes' },
+    { label: 'Google Reviews (1+)', col: 'how many new 4 or 5 st', type: 'number' },
+    { label: 'Social Media Post', col: 'did you share at least one post', type: 'yes' },
+    { label: 'Visited Every Classroom', col: 'did you visit every classroom', type: 'yes' },
+    { label: 'Licensing Issues', col: 'were there any licensing or compliance issues', type: 'no' },
+    { label: 'Maintained Ratios', col: 'have all classrooms maintained required staff-to-child', type: 'yes' },
+    { label: 'Rooms Clean & Inviting', col: 'were rooms clean and inviting', type: 'yes' },
+    { label: '1-on-1 / Observation Feedback', col: 'did you complete at least one one-on-one', type: 'yes' }
   ];
+
+  function findColInRow(row, fragment) {
+    for (var key in row) {
+      if (key.toLowerCase().includes(fragment)) return { header: key, value: String(row[key]).trim() };
+    }
+    return null;
+  }
+
+  function checkMetric(row, def) {
+    var col = findColInRow(row, def.col);
+    if (!col || !col.value) return 'fail';
+    var v = col.value.toLowerCase();
+    if (def.type === 'yes') {
+      if (v === 'yes' || v === '✅' || v === 'true') return 'pass';
+      if (v === 'no' || v === '❌' || v === 'false') return 'fail';
+      return 'warn';
+    }
+    if (def.type === 'no') {
+      // No = good (no issues)
+      if (v === 'no' || v === '❌' || v === 'false' || v === 'none' || v === 'n/a' || v === '') return 'pass';
+      if (v === 'yes' || v === '✅' || v === 'true') return 'fail';
+      return 'warn';
+    }
+    if (def.type === 'number') {
+      var num = parseInt(col.value);
+      return num > 0 ? 'pass' : 'fail';
+    }
+    return 'fail';
+  }
 
   var thead = '<thead><tr><th>Metric</th>';
   weekKeys.forEach(function(k) { thead += '<th>' + k + '</th>'; });
@@ -979,30 +1060,20 @@ function renderMetricsTable(qRows, qMonths, totalFridays) {
     tbody += '<tr><td>' + metric.label + '</td>';
     weekKeys.forEach(function(wk) {
       var rows = weekBuckets[wk];
-      var found = rows.some(function(r) {
-        return Object.entries(r).some(function(e) {
-          var h = e[0].toLowerCase();
-          var v = String(e[1]).toLowerCase();
-          return metric.keys.some(function(k) { return h.includes(k); }) && (v === 'yes' || v === '✅' || v === 'true');
-        });
+      // Check best result across rows for this week
+      var best = 'fail';
+      rows.forEach(function(r) {
+        var result = checkMetric(r, metric);
+        if (result === 'pass') best = 'pass';
+        else if (result === 'warn' && best !== 'pass') best = 'warn';
       });
-      if (found) {
+      if (best === 'pass') {
         yesCount++;
         tbody += '<td><span class="ic-pass">✅</span></td>';
+      } else if (best === 'warn') {
+        tbody += '<td><span class="ic-warn">⚠️</span></td>';
       } else {
-        // Check if there's a warning/partial
-        var hasWarn = rows.some(function(r) {
-          return Object.entries(r).some(function(e) {
-            var h = e[0].toLowerCase();
-            var v = String(e[1]).toLowerCase();
-            return metric.keys.some(function(k) { return h.includes(k); }) && v && v !== 'no' && v !== 'false' && v !== 'yes' && v !== 'true' && v !== '✅' && v !== '❌';
-          });
-        });
-        if (hasWarn) {
-          tbody += '<td><span class="ic-warn">⚠️</span></td>';
-        } else {
-          tbody += '<td><span class="ic-fail">❌</span></td>';
-        }
+        tbody += '<td><span class="ic-fail">❌</span></td>';
       }
     });
     var rate = weekKeys.length > 0 ? pct(yesCount, weekKeys.length) : 0;
