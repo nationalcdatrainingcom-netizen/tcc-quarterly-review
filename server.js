@@ -115,6 +115,7 @@ async function initDB() {
         focus_areas TEXT,
         goals JSONB,
         metrics_snapshot JSONB,
+        director_feedback TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW(),
         UNIQUE(director, quarter)
@@ -466,17 +467,96 @@ app.get('/api/reviews/:director/:quarter', async (req, res) => {
 });
 
 app.post('/api/reviews', async (req, res) => {
-  const { director, quarter, strengths_narrative, focus_areas, goals, metrics_snapshot } = req.body;
+  const { director, quarter, strengths_narrative, focus_areas, goals, metrics_snapshot, director_feedback, director_response } = req.body;
   try {
+    // Add columns if they don't exist (for existing databases)
+    await pool.query(`ALTER TABLE quarterly_reviews ADD COLUMN IF NOT EXISTS director_feedback TEXT`).catch(() => {});
+    await pool.query(`ALTER TABLE quarterly_reviews ADD COLUMN IF NOT EXISTS director_response JSONB`).catch(() => {});
+    
+    // Merge director_response into goals for backward compatibility
+    const mergedGoals = Object.assign({}, goals || {});
+    if (director_response) mergedGoals.director_response = director_response;
+    
     await pool.query(`
-      INSERT INTO quarterly_reviews (director, quarter, strengths_narrative, focus_areas, goals, metrics_snapshot, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      INSERT INTO quarterly_reviews (director, quarter, strengths_narrative, focus_areas, goals, metrics_snapshot, director_feedback, director_response, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
       ON CONFLICT (director, quarter)
-      DO UPDATE SET strengths_narrative = $3, focus_areas = $4, goals = $5, metrics_snapshot = $6, updated_at = NOW()
-    `, [director, quarter, strengths_narrative || '', focus_areas || '', JSON.stringify(goals || {}), JSON.stringify(metrics_snapshot || {})]);
+      DO UPDATE SET strengths_narrative = $3, focus_areas = $4, goals = $5, metrics_snapshot = $6, director_feedback = $7, director_response = $8, updated_at = NOW()
+    `, [director, quarter, strengths_narrative || '', focus_areas || '', JSON.stringify(mergedGoals), JSON.stringify(metrics_snapshot || {}), director_feedback || '', JSON.stringify(director_response || {})]);
     res.json({ success: true });
   } catch (err) {
     res.json({ success: false, error: err.message });
+  }
+});
+
+// ============================================================
+//  API: Signed Review Uploads
+// ============================================================
+const signedUpload = multer({ 
+  storage: multer.memoryStorage(), 
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    cb(null, allowed.includes(file.mimetype));
+  }
+});
+
+app.post('/api/signed-review/upload', signedUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.json({ success: false, error: 'No file uploaded' });
+    const { director, quarter } = req.body;
+    
+    // Create table if not exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS signed_reviews (
+        id SERIAL PRIMARY KEY,
+        director VARCHAR(50) NOT NULL,
+        quarter VARCHAR(10) NOT NULL,
+        filename VARCHAR(255),
+        mimetype VARCHAR(100),
+        filedata BYTEA,
+        uploaded_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(director, quarter)
+      )
+    `);
+    
+    await pool.query(`
+      INSERT INTO signed_reviews (director, quarter, filename, mimetype, filedata, uploaded_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      ON CONFLICT (director, quarter)
+      DO UPDATE SET filename = $3, mimetype = $4, filedata = $5, uploaded_at = NOW()
+    `, [director, quarter, req.file.originalname, req.file.mimetype, req.file.buffer]);
+    
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/signed-review/:director/:quarter', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT id, director, quarter, filename, mimetype, uploaded_at FROM signed_reviews WHERE director = $1 AND quarter = $2',
+      [req.params.director, req.params.quarter]
+    );
+    res.json({ success: true, data: rows[0] || null });
+  } catch (err) {
+    res.json({ success: false, data: null });
+  }
+});
+
+app.get('/api/signed-review/:director/:quarter/download', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT filename, mimetype, filedata FROM signed_reviews WHERE director = $1 AND quarter = $2',
+      [req.params.director, req.params.quarter]
+    );
+    if (!rows[0]) return res.status(404).send('Not found');
+    res.set('Content-Type', rows[0].mimetype);
+    res.set('Content-Disposition', 'inline; filename="' + rows[0].filename + '"');
+    res.send(rows[0].filedata);
+  } catch (err) {
+    res.status(500).send('Error');
   }
 });
 
