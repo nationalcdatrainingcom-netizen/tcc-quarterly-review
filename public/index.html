@@ -546,13 +546,120 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* --- Director Response Panel --- */
+.director-response-panel {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  margin-top: 24px;
+  box-shadow: var(--shadow-md);
+  border: 2px solid var(--navy);
+}
+.response-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid var(--sand);
+}
+.response-header h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.5rem;
+  color: var(--navy);
+}
+.response-header .subtitle {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+.response-section { margin-bottom: 24px; }
+.response-question {
+  margin-bottom: 20px;
+}
+.response-question label {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.response-question textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--sand);
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--cream);
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color 0.2s;
+}
+.response-question textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+}
+.signature-section {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 2px solid var(--sand);
+}
+.sig-row {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 28px;
+}
+.sig-block { flex: 1; }
+.sig-line {
+  border-bottom: 1px solid var(--text);
+  height: 40px;
+  margin-bottom: 6px;
+}
+.sig-block span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+/* --- Signed Upload Panel --- */
+.signed-upload-panel { margin-bottom: 32px; }
+.signed-existing { margin-bottom: 16px; }
+.signed-doc {
+  background: var(--green-light);
+  border-radius: 8px;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--green);
+}
+.signed-doc a {
+  color: var(--teal);
+  font-weight: 800;
+  text-decoration: none;
+}
+.signed-doc a:hover { text-decoration: underline; }
+
 /* --- Print --- */
 @media print {
   .header, .selector-panel, .action-bar, .upload-panel, .btn-save, .info-row input { break-inside: avoid; }
-  .action-bar, .btn-save, .upload-panel, .selector-panel { display: none !important; }
+  .action-bar, .btn-save, .upload-panel, .selector-panel, .signed-upload-panel, .no-print { display: none !important; }
   body { background: white; }
   .container { max-width: 100%; padding: 0 10px; }
   .review-panel { break-inside: avoid; }
+  .director-response-panel {
+    break-before: page;
+    border: 1px solid #ccc;
+    box-shadow: none;
+  }
+  .response-question textarea {
+    border: none;
+    background: transparent;
+    min-height: 60px;
+    padding: 4px 0;
+    border-bottom: 1px solid #ddd;
+  }
 }
 
 /* --- Hidden --- */
@@ -652,6 +759,77 @@ body {
 
     <!-- Auto-Generated Review -->
     <div class="review-panel" id="reviewPanel"></div>
+
+    <!-- Director Response Page (Page 2 of printed review) -->
+    <div class="director-response-panel" id="directorResponsePanel">
+      <div class="response-header">
+        <h2>Director Response</h2>
+        <div class="subtitle" id="responseSubtitle"></div>
+      </div>
+
+      <div class="response-section">
+        <div class="response-question">
+          <label>What do you feel is going well at your center?</label>
+          <textarea id="respGoingWell" rows="4" placeholder="Share what you're most proud of this quarter..."></textarea>
+        </div>
+
+        <div class="response-question">
+          <label>What do you love most about your job?</label>
+          <textarea id="respLoveMost" rows="3" placeholder="What brings you joy in this role..."></textarea>
+        </div>
+
+        <div class="response-question">
+          <label>What is your personal growth goal for next quarter? How do you want to grow?</label>
+          <textarea id="respGrowthGoal" rows="4" placeholder="Choose an area you want to develop — this is your goal to own..."></textarea>
+        </div>
+
+        <div class="response-question">
+          <label>What can leadership (Mary) do more of or differently to support you in reaching your goals?</label>
+          <textarea id="directorFeedback" rows="3" placeholder="What support would make the biggest difference for you..."></textarea>
+        </div>
+      </div>
+
+      <div class="signature-section">
+        <div class="sig-row">
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <span>Director Signature</span>
+          </div>
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <span>Date</span>
+          </div>
+        </div>
+        <div class="sig-row">
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <span>Owner / Executive Director Signature</span>
+          </div>
+          <div class="sig-block">
+            <div class="sig-line"></div>
+            <span>Date</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="no-print" style="margin-top:20px;">
+        <button class="action-btn gold" id="btnSaveResponse" onclick="saveDirectorResponse()">💾 Save Director Response</button>
+        <span id="responseSaveStatus" style="font-size:0.82rem;color:var(--text-light);margin-left:12px;"></span>
+      </div>
+    </div>
+
+    <!-- Signed Copy Upload -->
+    <h2 class="section-title">Signed Review Upload <span class="line"></span></h2>
+    <div class="signed-upload-panel" id="signedUploadPanel">
+      <div class="signed-existing" id="signedExisting"></div>
+      <div class="upload-panel" style="border:2px dashed var(--teal);margin:0;">
+        <h4>Upload Signed Copy</h4>
+        <p>After both signatures are collected, upload a photo or scan of the signed review.</p>
+        <label class="btn-upload" for="signedFile" style="background:var(--teal);">Choose File (PDF, JPG, PNG)</label>
+        <input type="file" id="signedFile" accept=".pdf,.jpg,.jpeg,.png" onchange="handleSignedUpload(this)">
+        <div class="upload-result" id="signedUploadResult"></div>
+      </div>
+    </div>
 
     <!-- Bottom Action Bar -->
     <div class="action-bar" style="margin-top:24px;">
@@ -1557,17 +1735,26 @@ function renderNarrative(dir, qStr, qRows, totalFridays, compData, qMonths, atte
     html += '<div class="starter">💬 ' + esc(s) + '</div>';
   });
 
-  // === SAVE BUTTON ===
+  // === SAVE BUTTON (in narrative panel) ===
   html += '</div>';
   html += '<div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.15);">';
-  html += '<button class="action-btn gold" id="btnSaveReview" onclick="saveReview(\'' + esc(dirKey) + '\',\'' + esc(qStr) + '\')">💾 Save This Review</button>';
-  html += ' <span id="saveStatus" style="font-size:0.82rem;opacity:0.7;margin-left:12px;"></span>';
+  html += '<p style="opacity:0.7;font-size:0.82rem;">Complete the Director Response section below, then save everything together.</p>';
   html += '</div>';
 
   // === PREVIOUS QUARTER GOALS ===
   html += '<div id="prevGoalsSection"></div>';
 
   panel.innerHTML = html;
+
+  // Set the Director Response subtitle
+  var respSub = document.getElementById('responseSubtitle');
+  if (respSub) respSub.textContent = qMonthLabel(qMonths) + ' · ' + dir.location + ' · ' + dir.name;
+
+  // Load saved signed doc status
+  loadSignedDoc(dirKey, qStr);
+
+  // Load any previously saved review for THIS quarter (to restore responses)
+  loadCurrentReview(dirKey, qStr);
 
   // Load previous quarter's review if it exists
   loadPreviousReview(dirKey, qStr);
@@ -1602,9 +1789,21 @@ function renderNarrative(dir, qStr, qRows, totalFridays, compData, qMonths, atte
   };
 }
 
-async function saveReview(dirKey, qStr) {
+// Save is now triggered from the Director Response section
+async function saveDirectorResponse() {
+  var dirKey = document.getElementById('selDirector').value;
+  var qVal = document.getElementById('selQuarter').value;
+  var parts = qVal.split('-');
+  var qStr = 'Q' + parts[0] + ' ' + parts[1];
+  
   var data = window._currentReviewData;
   if (!data) return;
+  
+  // Capture all director response fields
+  var goingWell = (document.getElementById('respGoingWell') || {}).value || '';
+  var loveMost = (document.getElementById('respLoveMost') || {}).value || '';
+  var growthGoal = (document.getElementById('respGrowthGoal') || {}).value || '';
+  var feedback = (document.getElementById('directorFeedback') || {}).value || '';
   
   var body = {
     director: dirKey,
@@ -1612,27 +1811,92 @@ async function saveReview(dirKey, qStr) {
     strengths_narrative: data.strengths_narrative,
     focus_areas: data.focus_areas,
     goals: data.goals,
-    metrics_snapshot: data.metrics_snapshot
+    metrics_snapshot: data.metrics_snapshot,
+    director_feedback: feedback,
+    director_response: {
+      going_well: goingWell.trim(),
+      love_most: loveMost.trim(),
+      growth_goal: growthGoal.trim(),
+      feedback_to_owner: feedback.trim()
+    }
   };
   
-  document.getElementById('btnSaveReview').disabled = true;
-  document.getElementById('saveStatus').textContent = 'Saving...';
+  document.getElementById('btnSaveResponse').disabled = true;
+  document.getElementById('responseSaveStatus').textContent = 'Saving...';
   
   try {
     var res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     var result = await res.json();
     if (result.success) {
-      document.getElementById('saveStatus').textContent = '✓ Review saved';
-      toast('Review saved!', 'success');
+      document.getElementById('responseSaveStatus').textContent = '✓ Saved successfully';
+      toast('Review & response saved!', 'success');
     } else {
-      document.getElementById('saveStatus').textContent = 'Error saving';
+      document.getElementById('responseSaveStatus').textContent = 'Error saving';
       toast('Error: ' + result.error, 'error');
     }
   } catch (err) {
-    document.getElementById('saveStatus').textContent = 'Error saving';
+    document.getElementById('responseSaveStatus').textContent = 'Error saving';
     toast('Save failed', 'error');
   }
-  document.getElementById('btnSaveReview').disabled = false;
+  document.getElementById('btnSaveResponse').disabled = false;
+}
+
+// Keep old function name as alias
+async function saveReview(dirKey, qStr) {
+  saveDirectorResponse();
+}
+
+// Handle signed review upload
+async function handleSignedUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var dirKey = document.getElementById('selDirector').value;
+  var qVal = document.getElementById('selQuarter').value;
+  var parts = qVal.split('-');
+  var qStr = 'Q' + parts[0] + ' ' + parts[1];
+
+  var formData = new FormData();
+  formData.append('file', file);
+  formData.append('director', dirKey);
+  formData.append('quarter', qStr);
+
+  var resultDiv = document.getElementById('signedUploadResult');
+  resultDiv.className = 'upload-result';
+  resultDiv.style.display = 'block';
+  resultDiv.textContent = 'Uploading...';
+
+  try {
+    var res = await fetch('/api/signed-review/upload', { method: 'POST', body: formData });
+    var data = await res.json();
+    if (data.success) {
+      resultDiv.innerHTML = '<strong>Signed copy uploaded!</strong>';
+      resultDiv.className = 'upload-result success';
+      toast('Signed review uploaded!', 'success');
+      loadSignedDoc(dirKey, qStr);
+    } else {
+      resultDiv.textContent = 'Error: ' + data.error;
+      resultDiv.className = 'upload-result error';
+    }
+  } catch (err) {
+    resultDiv.textContent = 'Upload failed: ' + err.message;
+    resultDiv.className = 'upload-result error';
+  }
+  input.value = '';
+}
+
+async function loadSignedDoc(dirKey, qStr) {
+  try {
+    var res = await fetch('/api/signed-review/' + dirKey + '/' + encodeURIComponent(qStr));
+    var result = await res.json();
+    var container = document.getElementById('signedExisting');
+    if (result.success && result.data) {
+      container.innerHTML = '<div class="signed-doc"><span>✅ Signed copy on file — uploaded ' + new Date(result.data.uploaded_at).toLocaleDateString() + ' (' + result.data.filename + ')</span><a href="/api/signed-review/' + dirKey + '/' + encodeURIComponent(qStr) + '/download" target="_blank">View</a></div>';
+    } else {
+      container.innerHTML = '';
+    }
+  } catch (err) {
+    // Silently fail
+  }
 }
 
 async function loadPreviousReview(dirKey, currentQStr) {
@@ -1667,11 +1931,74 @@ async function loadPreviousReview(dirKey, currentQStr) {
     if (review.strengths_narrative) {
       html += '<p style="margin-top:12px;opacity:0.8;"><strong>Last quarter\'s strengths:</strong> ' + esc(review.strengths_narrative) + '</p>';
     }
+
+    // Show last quarter's director feedback if it exists
+    if (review.director_feedback) {
+      html += '<div style="margin-top:12px;background:rgba(255,255,255,0.06);border-left:3px solid var(--gold,#C8A951);padding:12px 16px;border-radius:0 8px 8px 0;">';
+      html += '<strong style="opacity:0.8;">What ' + esc(dirKey.charAt(0).toUpperCase() + dirKey.slice(1)) + ' asked of leadership last quarter:</strong><br>';
+      html += '<span style="opacity:0.9;">"' + esc(review.director_feedback) + '"</span>';
+      html += '</div>';
+    }
     
     html += '</div>';
     section.innerHTML = html;
   } catch (err) {
     // Silently fail — previous review is optional
+  }
+}
+
+async function loadCurrentReview(dirKey, qStr) {
+  try {
+    var res = await fetch('/api/reviews/' + dirKey + '/' + encodeURIComponent(qStr));
+    var result = await res.json();
+    if (!result.success || !result.data) return;
+
+    var d = result.data;
+
+    // Restore director response fields
+    if (d.director_feedback) {
+      var el = document.getElementById('directorFeedback');
+      if (el) el.value = d.director_feedback;
+    }
+
+    // Restore director_response JSON fields
+    var dr = d.goals && d.goals.director_response ? d.goals.director_response : 
+             (d.director_response || null);
+    if (!dr && d.goals) dr = d.goals;
+    
+    // Try to get from the dedicated director_response field stored in goals
+    if (d.metrics_snapshot && d.metrics_snapshot.director_response) {
+      dr = d.metrics_snapshot.director_response;
+    }
+
+    // Check the POST body structure — we store director_response inside goals
+    try {
+      var goals = typeof d.goals === 'string' ? JSON.parse(d.goals) : d.goals;
+      if (goals && goals.director_response) dr = goals.director_response;
+    } catch(e) {}
+
+    if (dr) {
+      if (dr.going_well) {
+        var el = document.getElementById('respGoingWell');
+        if (el) el.value = dr.going_well;
+      }
+      if (dr.love_most) {
+        var el = document.getElementById('respLoveMost');
+        if (el) el.value = dr.love_most;
+      }
+      if (dr.growth_goal) {
+        var el = document.getElementById('respGrowthGoal');
+        if (el) el.value = dr.growth_goal;
+      }
+      if (dr.feedback_to_owner) {
+        var el = document.getElementById('directorFeedback');
+        if (el && !el.value) el.value = dr.feedback_to_owner;
+      }
+    }
+
+    document.getElementById('responseSaveStatus').textContent = '(previously saved ' + new Date(d.updated_at).toLocaleDateString() + ')';
+  } catch (err) {
+    // Silently fail
   }
 }
 
