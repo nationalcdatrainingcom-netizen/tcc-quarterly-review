@@ -1107,19 +1107,59 @@ function renderCompliance(compData, dir, qMonths) {
   var monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   var monthAbbr = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  // compData is array of arrays: [Timestamp, Type, Center, Classroom, Inspector, Inspection Date, Pass, Fail, JSON Data]
+  // compData rows have varying formats. Parse the embedded JSON (index 14) for reliable data.
+  // Fallback to column indices: 1=type, 3=center, 4=classroom, 6=teacher, 7=inspDate, 10=pass, 11=fail
   var classroomInspections = [];
   var adminInspections = [];
 
   compData.forEach(function(row) {
     var type = String(row[1] || '').toLowerCase();
-    var rowCenter = String(row[2] || '').toLowerCase();
-    var inspDate = String(row[5] || '');
+    if (!type || (type !== 'classroom' && type !== 'admin')) return;
+
+    // Try to get data from the JSON blob first (most reliable)
+    var jsonStr = '';
+    for (var ji = row.length - 1; ji >= 10; ji--) {
+      var cell = String(row[ji] || '');
+      if (cell.indexOf('{') === 0 && cell.indexOf('centerId') > -1) { jsonStr = cell; break; }
+    }
+
+    var rowCenter = '', classroom = '', inspector = '', inspDate = '', pass = 0, fail = 0;
+
+    if (jsonStr) {
+      try {
+        var jd = JSON.parse(jsonStr);
+        rowCenter = (jd.centerName || '').toLowerCase();
+        classroom = jd.classroomName || '';
+        inspector = jd.teacherName || '';
+        inspDate = jd.inspectionDate || '';
+        pass = parseInt(jd.pass) || 0;
+        fail = parseInt(jd.fail) || 0;
+        if (jd.type) type = jd.type.toLowerCase();
+      } catch(e) { /* fall through to index-based */ }
+    }
+    
+    if (!rowCenter) {
+      // Fallback to column indices
+      rowCenter = String(row[3] || '').toLowerCase();
+      classroom = String(row[4] || '');
+      inspector = String(row[6] || '');
+      inspDate = String(row[7] || '');
+      pass = parseInt(row[10]) || 0;
+      fail = parseInt(row[11]) || 0;
+    }
 
     if (!rowCenter.includes(centerName)) return;
+    // Skip test/diagnostic rows
+    if (inspector.toLowerCase().includes('diagnostic') || (pass === 0 && fail === 0 && !classroom)) return;
 
-    // Check if inspection date falls in quarter
-    var d = new Date(inspDate);
+    // Parse inspection date
+    var d;
+    if (inspDate.match(/^\d{4}-\d{2}-\d{2}/)) {
+      var dp = inspDate.split('-');
+      d = new Date(parseInt(dp[0]), parseInt(dp[1]) - 1, parseInt(dp[2]));
+    } else {
+      d = new Date(inspDate);
+    }
     if (isNaN(d)) return;
     var m = d.getMonth() + 1;
     var y = d.getFullYear();
@@ -1127,11 +1167,11 @@ function renderCompliance(compData, dir, qMonths) {
 
     var record = {
       type: type,
-      classroom: String(row[3] || ''),
-      inspector: String(row[4] || ''),
+      classroom: classroom,
+      inspector: inspector,
       date: inspDate,
-      pass: parseInt(row[6]) || 0,
-      fail: parseInt(row[7]) || 0,
+      pass: pass,
+      fail: fail,
       month: m
     };
 
