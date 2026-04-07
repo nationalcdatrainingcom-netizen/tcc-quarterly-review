@@ -1438,15 +1438,31 @@ function renderNarrative(dir, qStr, qRows, totalFridays, compData, qMonths, atte
   var m = extractMetrics(qRows);
   var n = m.total;
   var panel = document.getElementById('reviewPanel');
+  var dirKey = document.getElementById('selDirector').value;
 
-  // Overall compliance rate
-  var metricRates = [
-    pct(m.n2f, n), pct(m.spot, n), pct(m.ratios, n), pct(m.clean, n),
-    pct(m.asked_review, n), pct(m.social, n), pct(m.visited, n), pct(m.one_on_one, n)
+  // Build all metric rates
+  var allMetrics = [
+    { key: 'n2f', label: 'Name-to-Face Reviews', rate: pct(m.n2f, n), impact: 'When families see consistent head counts and active supervision, they feel safe leaving their children. This directly impacts parent confidence, word-of-mouth referrals, and retention.' },
+    { key: 'spot', label: 'Unannounced Spot Checks', rate: pct(m.spot, n), impact: 'Spot checks ensure that the quality families experience isn\'t performative — it\'s real and constant. Families who trust the consistency of care become your strongest advocates.' },
+    { key: 'ratios', label: 'Staff-to-Child Ratios', rate: pct(m.ratios, n), impact: 'Maintained ratios mean every child gets the attention they deserve. Families notice when their child is truly seen and known — this is what keeps them enrolled and referring others.' },
+    { key: 'clean', label: 'Rooms Clean & Inviting', rate: pct(m.clean, n), impact: 'A clean, inviting room is the first thing a touring family sees. It communicates respect, care, and professionalism — the difference between a family choosing us or walking away.' },
+    { key: 'lic', label: 'No Licensing Issues', rate: pct(m.lic, n), impact: 'A clean licensing record protects our reputation and builds the community trust that drives enrollment. Every issue is a risk to the families who depend on us to stay open and safe.' },
+    { key: 'asked', label: 'Asked for Google Reviews', rate: pct(m.asked_review, n), impact: 'Google reviews are the #1 way new families find us. Every review is a real family saying "this is where my child is loved." More reviews directly means more tours and more enrollment.' },
+    { key: 'got', label: 'Received Google Reviews', rate: pct(m.got_review, n), impact: 'Receiving reviews means families are actively willing to publicly vouch for the care we provide. This is the strongest form of marketing — and it\'s free.' },
+    { key: 'social', label: 'Social Media Posts', rate: pct(m.social, n), impact: 'Social media shows prospective families what daily life looks like here. When they see joyful children learning and exploring, they picture their child here too. This drives tours.' },
+    { key: 'visited', label: 'Visited Every Classroom', rate: pct(m.visited, n), impact: 'Director presence in classrooms ensures quality is consistent everywhere, not just in the rooms that get attention. Families expect every room to reflect the love we promise.' },
+    { key: 'one1', label: '1-on-1 / Observation Feedback', rate: pct(m.one_on_one, n), impact: 'Teachers who receive coaching grow. Growing teachers provide better care. Better care means happier families who stay enrolled and tell others about us.' }
   ];
-  var overallCompliance = metricRates.length > 0 ? Math.round(metricRates.reduce(function(s, v) { return s + v; }, 0) / metricRates.length) : 0;
 
-  // Trend direction
+  var overallRate = Math.round(allMetrics.reduce(function(s, m) { return s + m.rate; }, 0) / allMetrics.length);
+
+  // Sort to find strengths and focus areas
+  var sorted = allMetrics.slice().sort(function(a, b) { return b.rate - a.rate; });
+  var strengths = sorted.filter(function(m) { return m.rate >= 70; }).slice(0, 3);
+  var weaknesses = sorted.filter(function(m) { return m.rate < 70; }).sort(function(a, b) { return a.rate - b.rate; }).slice(0, 2);
+  if (weaknesses.length === 0) weaknesses = sorted.slice(-2);
+
+  // Trend
   var firstHalf = qRows.slice(0, Math.ceil(qRows.length / 2));
   var secondHalf = qRows.slice(Math.ceil(qRows.length / 2));
   var firstRate = calcOverallRate(firstHalf);
@@ -1456,20 +1472,49 @@ function renderNarrative(dir, qStr, qRows, totalFridays, compData, qMonths, atte
   function grade(v) { return v >= 80 ? 'Strong' : v >= 50 ? 'Developing' : 'Needs Attention'; }
   function emoji(v) { return v >= 80 ? '<span class="emoji-badge">✅</span>' : '<span class="emoji-badge">🔴</span>'; }
 
+  // ---- BUILD NARRATIVE ----
   var html = '<h2>Quarterly Review: ' + esc(dir.name) + '</h2>';
   html += '<div class="subtitle">' + qMonthLabel(qMonths) + ' · ' + esc(dir.location) + ' · ' + n + ' of ' + totalFridays + ' Reports Submitted (' + pct(n, totalFridays) + '%)</div>';
-
   html += '<div class="review-section">';
 
-  // Overall
-  html += '<h3>Overall Performance</h3>';
-  html += '<p>' + esc(dir.name) + ' submitted <strong>' + n + ' of ' + totalFridays + ' weekly reports</strong> (' + pct(n, totalFridays) + '%) with an overall compliance rate of <strong>' + overallCompliance + '%</strong>. The overall trend is <strong>' + trend + '</strong>';
-  if (trend === 'improving') html += ' — compliance improved from ' + firstRate + '% to ' + secondRate + '%, showing meaningful growth.';
-  else if (trend === 'declining') html += ' — compliance moved from ' + firstRate + '% to ' + secondRate + '%, indicating areas that need focused attention.';
-  else html += ', showing consistency across the period.';
-  html += '</p>';
+  // === VISION STATEMENT ===
+  html += '<h3>Our Vision</h3>';
+  html += '<p style="font-style:italic;opacity:0.85;">At The Children\'s Center, our vision is to love our families — and we show that by providing the highest quality of care. When we do things well, our families feel the difference. They know their children are loved and very well cared for. Every metric below reflects how well we are living that vision and building the kind of center families choose, stay at, and tell others about.</p>';
 
-  // Supervision & Safety
+  // === WHAT YOU'RE DOING WELL ===
+  html += '<h3>What ' + esc(dir.name) + ' Is Doing Well</h3>';
+  if (strengths.length > 0) {
+    html += '<p>' + esc(dir.name) + ' is showing strong leadership in key areas that directly impact the family experience at ' + esc(dir.location) + ':</p>';
+    strengths.forEach(function(s) {
+      html += '<div class="highlight"><strong>' + s.label + ' (' + s.rate + '%)</strong> — ' + s.impact + '</div>';
+    });
+    html += '<p>These strengths are what families notice first. They create the feeling of safety, warmth, and excellence that makes a parent say, <em>"This is the right place for my child."</em> Keep building on this momentum.</p>';
+  } else {
+    html += '<p>This quarter presents an opportunity for focused growth across all areas. The foundation is there — let\'s build on it together.</p>';
+  }
+
+  // Director's own words
+  if (m.strengths.length > 0) {
+    html += '<h3>In ' + esc(dir.name) + '\'s Own Words</h3>';
+    m.strengths.slice(-3).forEach(function(s) {
+      html += '<div class="highlight">"' + esc(s.substring(0, 300)) + '"</div>';
+    });
+  }
+
+  // === FOCUS AREAS — TIED TO ENROLLMENT ===
+  html += '<h3>Priority Focus Areas for Next Quarter</h3>';
+  html += '<p>Our highest organizational priority is <strong>enrollment — being full with a waitlist</strong>. The areas below are where focused improvement will have the greatest impact on filling seats and keeping families:</p>';
+
+  weaknesses.forEach(function(w) {
+    html += '<div style="background:rgba(255,255,255,0.06);border-left:3px solid #C0392B;padding:12px 16px;margin:10px 0;border-radius:0 8px 8px 0;">';
+    html += '<strong style="color:#E67E22;">' + w.label + ' — currently at ' + w.rate + '%</strong><br>';
+    html += '<span style="opacity:0.9;">' + w.impact + '</span>';
+    html += '</div>';
+  });
+
+  html += '<p>Improving these areas doesn\'t just check a box — it creates the kind of experience that fills classrooms. When every classroom is visited, every family is asked to share their experience, and every teacher is coached to grow, the result is a center that families <em>choose</em>, <em>stay at</em>, and <em>recommend</em>.</p>';
+
+  // === METRICS SUMMARY ===
   html += '<h3>Supervision &amp; Safety</h3>';
   html += '<p>' + emoji(pct(m.n2f, n)) + ' <strong>Name-to-Face Reviews:</strong> ' + pct(m.n2f, n) + '% — ' + grade(pct(m.n2f, n)) + '</p>';
   html += '<p>' + emoji(pct(m.spot, n)) + ' <strong>Unannounced Spot Checks:</strong> ' + pct(m.spot, n) + '% — ' + grade(pct(m.spot, n)) + '</p>';
@@ -1477,26 +1522,16 @@ function renderNarrative(dir, qStr, qRows, totalFridays, compData, qMonths, atte
   html += '<p>' + emoji(pct(m.clean, n)) + ' <strong>Rooms Clean &amp; Inviting:</strong> ' + pct(m.clean, n) + '% — ' + grade(pct(m.clean, n)) + '</p>';
   html += '<p>' + emoji(pct(m.lic, n)) + ' <strong>No Licensing Issues:</strong> ' + pct(m.lic, n) + '% — ' + grade(pct(m.lic, n)) + '</p>';
 
-  // Community & Engagement
   html += '<h3>Community &amp; Engagement</h3>';
   html += '<p>' + emoji(pct(m.asked_review, n)) + ' <strong>Asked for Google Review:</strong> ' + pct(m.asked_review, n) + '%</p>';
   html += '<p>' + emoji(pct(m.got_review, n)) + ' <strong>Received Google Reviews (1+):</strong> ' + pct(m.got_review, n) + '%</p>';
   html += '<p>' + emoji(pct(m.social, n)) + ' <strong>Social Media Posts:</strong> ' + pct(m.social, n) + '%</p>';
   html += '<p>' + emoji(pct(m.visited, n)) + ' <strong>Visited Every Classroom:</strong> ' + pct(m.visited, n) + '%</p>';
 
-  // Staff Development
   html += '<h3>Staff Development</h3>';
   html += '<p>' + emoji(pct(m.one_on_one, n)) + ' <strong>1-on-1 / Observation Feedback:</strong> ' + pct(m.one_on_one, n) + '% — ' + grade(pct(m.one_on_one, n)) + '</p>';
 
-  // Highlighted Strengths
-  if (m.strengths.length > 0) {
-    html += '<h3>Highlighted Strengths</h3>';
-    m.strengths.slice(-3).forEach(function(s) {
-      html += '<div class="highlight">"' + esc(s.substring(0, 250)) + '"</div>';
-    });
-  }
-
-  // Self-Identified Focus Areas
+  // === SELF-IDENTIFIED FOCUS ===
   if (m.focuses.length > 0) {
     html += '<h3>Self-Identified Focus Areas</h3>';
     m.focuses.slice(-5).forEach(function(f) {
@@ -1504,24 +1539,140 @@ function renderNarrative(dir, qStr, qRows, totalFridays, compData, qMonths, atte
     });
   }
 
-  // Conversation Starters
+  // === CONVERSATION STARTERS ===
   html += '<h3>Suggested Conversation Starters</h3>';
   var starters = [];
-  if (pct(n, totalFridays) < 80) starters.push('Reports were submitted ' + pct(n, totalFridays) + '% of Fridays. What is getting in the way of consistent submission?');
-  if (pct(m.n2f, n) < 70) starters.push('Name-to-face consistency is at ' + pct(m.n2f, n) + '%. What barriers exist, and what support would help?');
-  if (pct(m.social, n) < 50) starters.push('Social media posting is at ' + pct(m.social, n) + '%. How can we make this easier for you or your team?');
-  if (pct(m.one_on_one, n) < 60) starters.push('1-on-1 meetings were at ' + pct(m.one_on_one, n) + '%. What is competing for that time?');
-  if (trend === 'improving') starters.push('Your compliance has trended upward this quarter. What do you think is driving that improvement?');
-  if (trend === 'declining') starters.push('Scores have dipped this quarter. What has been weighing on you, and where do you need more support?');
-  if (m.support.length >= 3) starters.push('You raised ' + m.support.length + ' support requests. Let\'s make sure nothing fell through the cracks.');
-  if (starters.length === 0) starters.push('Overall, this has been a solid quarter. What are you most proud of, and what would you like to focus on next?');
+  if (pct(n, totalFridays) < 80) starters.push('Reports were submitted ' + pct(n, totalFridays) + '% of Fridays. Consistent reporting helps me support you better — what would make this easier?');
+  weaknesses.forEach(function(w) {
+    if (w.rate < 50) starters.push(w.label + ' is at ' + w.rate + '%. What\'s getting in the way, and what support would help you improve this?');
+  });
+  if (pct(m.asked_review, n) < 50) starters.push('We asked for Google reviews ' + pct(m.asked_review, n) + '% of the time. New families search for us online first — how can we build this into a weekly habit?');
+  if (pct(m.social, n) < 50) starters.push('Social media posting is at ' + pct(m.social, n) + '%. Prospective families want to see daily life here. What would make posting easier for your team?');
+  if (trend === 'improving') starters.push('Your metrics have trended upward this quarter — that\'s real progress. What do you think is driving that, and how do we keep it going?');
+  if (trend === 'declining') starters.push('Some areas dipped this quarter. I want to understand what\'s been hard so we can solve it together. What would help most right now?');
+  if (m.support.length >= 3) starters.push('You raised ' + m.support.length + ' support requests this quarter. Let\'s walk through each one and make sure nothing fell through the cracks.');
+  starters.push('Looking ahead, what is the one thing that would make the biggest difference for your families and your team next quarter?');
 
   starters.forEach(function(s) {
     html += '<div class="starter">💬 ' + esc(s) + '</div>';
   });
 
+  // === SAVE BUTTON ===
   html += '</div>';
+  html += '<div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.15);">';
+  html += '<button class="action-btn gold" id="btnSaveReview" onclick="saveReview(\'' + esc(dirKey) + '\',\'' + esc(qStr) + '\')">💾 Save This Review</button>';
+  html += ' <span id="saveStatus" style="font-size:0.82rem;opacity:0.7;margin-left:12px;"></span>';
+  html += '</div>';
+
+  // === PREVIOUS QUARTER GOALS ===
+  html += '<div id="prevGoalsSection"></div>';
+
   panel.innerHTML = html;
+
+  // Load previous quarter's review if it exists
+  loadPreviousReview(dirKey, qStr);
+
+  // Store current data for save
+  window._currentReviewData = {
+    strengths_narrative: strengths.map(function(s) { return s.label + ' (' + s.rate + '%)'; }).join('; '),
+    focus_areas: weaknesses.map(function(w) { return w.label + ' (' + w.rate + '%) — ' + w.impact; }).join('\n\n'),
+    goals: {
+      enrollment_priority: true,
+      focus_metrics: weaknesses.map(function(w) { return { key: w.key, label: w.label, rate: w.rate }; }),
+      strength_metrics: strengths.map(function(s) { return { key: s.key, label: s.label, rate: s.rate }; }),
+      trend: trend,
+      director_strengths: m.strengths.slice(-3),
+      director_focuses: m.focuses.slice(-5)
+    },
+    metrics_snapshot: {
+      reports_submitted: n,
+      total_fridays: totalFridays,
+      overall_rate: overallRate,
+      n2f: pct(m.n2f, n),
+      spot: pct(m.spot, n),
+      ratios: pct(m.ratios, n),
+      clean: pct(m.clean, n),
+      lic: pct(m.lic, n),
+      asked_review: pct(m.asked_review, n),
+      got_review: pct(m.got_review, n),
+      social: pct(m.social, n),
+      visited: pct(m.visited, n),
+      one_on_one: pct(m.one_on_one, n)
+    }
+  };
+}
+
+async function saveReview(dirKey, qStr) {
+  var data = window._currentReviewData;
+  if (!data) return;
+  
+  var body = {
+    director: dirKey,
+    quarter: qStr,
+    strengths_narrative: data.strengths_narrative,
+    focus_areas: data.focus_areas,
+    goals: data.goals,
+    metrics_snapshot: data.metrics_snapshot
+  };
+  
+  document.getElementById('btnSaveReview').disabled = true;
+  document.getElementById('saveStatus').textContent = 'Saving...';
+  
+  try {
+    var res = await fetch('/api/reviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    var result = await res.json();
+    if (result.success) {
+      document.getElementById('saveStatus').textContent = '✓ Review saved';
+      toast('Review saved!', 'success');
+    } else {
+      document.getElementById('saveStatus').textContent = 'Error saving';
+      toast('Error: ' + result.error, 'error');
+    }
+  } catch (err) {
+    document.getElementById('saveStatus').textContent = 'Error saving';
+    toast('Save failed', 'error');
+  }
+  document.getElementById('btnSaveReview').disabled = false;
+}
+
+async function loadPreviousReview(dirKey, currentQStr) {
+  try {
+    var prev = getPreviousQuarter(currentQStr);
+    if (!prev) return;
+    
+    var res = await fetch('/api/reviews/' + dirKey + '/' + encodeURIComponent(prev));
+    var result = await res.json();
+    if (!result.success || !result.data) return;
+    
+    var review = result.data;
+    var section = document.getElementById('prevGoalsSection');
+    
+    var html = '<div style="margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.15);">';
+    html += '<h3>Previous Quarter Goals (' + esc(prev) + ')</h3>';
+    
+    if (review.goals && review.goals.focus_metrics) {
+      review.goals.focus_metrics.forEach(function(fm) {
+        // Find current rate for this metric
+        var currentMetric = window._currentReviewData.metrics_snapshot[fm.key] || 0;
+        var diff = currentMetric - fm.rate;
+        var arrow = diff > 5 ? '↑' : diff < -5 ? '↓' : '→';
+        var color = diff > 5 ? '#27AE60' : diff < -5 ? '#C0392B' : '#C8A951';
+        
+        html += '<div style="background:rgba(255,255,255,0.06);padding:10px 14px;margin:6px 0;border-radius:8px;">';
+        html += '<strong>' + esc(fm.label) + '</strong>: was ' + fm.rate + '% → now <span style="color:' + color + ';font-weight:800;">' + currentMetric + '% ' + arrow + '</span>';
+        html += '</div>';
+      });
+    }
+    
+    if (review.strengths_narrative) {
+      html += '<p style="margin-top:12px;opacity:0.8;"><strong>Last quarter\'s strengths:</strong> ' + esc(review.strengths_narrative) + '</p>';
+    }
+    
+    html += '</div>';
+    section.innerHTML = html;
+  } catch (err) {
+    // Silently fail — previous review is optional
+  }
 }
 
 function calcOverallRate(rows) {
