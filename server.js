@@ -302,13 +302,67 @@ app.post('/api/attendance/upload', upload.single('file'), async (req, res) => {
     const csvContent = lines.slice(headerIdx).join('\n');
     const records = parse(csvContent, { columns: true, skip_empty_lines: true, relax_column_count: true });
 
+    // Build a DOB lookup for age-based classroom assignment
+    const childDOB = {};
+    for (const row of records) {
+      const name = (row['Name'] || '').trim();
+      const dob = (row['Date of birth'] || '').trim();
+      if (name && dob && !childDOB[name]) {
+        childDOB[name] = dob;
+      }
+    }
+
+    // Assign classroom by age when "No Classroom" or empty
+    function assignClassroomByAge(name, attendanceDate) {
+      const dob = childDOB[name];
+      if (!dob) return 'Multi-Age';
+      
+      // Parse DOB — format is like "March 10, 2022" or "3/10/2022"
+      let dobDate;
+      if (dob.includes(',')) {
+        dobDate = new Date(dob);
+      } else {
+        const parts = dob.split('/');
+        if (parts.length === 3) {
+          dobDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+        } else {
+          dobDate = new Date(dob);
+        }
+      }
+      if (isNaN(dobDate)) return 'Multi-Age';
+
+      // Parse attendance date (M/D/YYYY)
+      let attDate;
+      const attParts = attendanceDate.split('/');
+      if (attParts.length === 3) {
+        attDate = new Date(parseInt(attParts[2]), parseInt(attParts[0]) - 1, parseInt(attParts[1]));
+      } else {
+        attDate = new Date(attendanceDate);
+      }
+      if (isNaN(attDate)) return 'Multi-Age';
+
+      // Calculate age in months
+      const ageMonths = (attDate.getFullYear() - dobDate.getFullYear()) * 12 + (attDate.getMonth() - dobDate.getMonth());
+      const ageYears = ageMonths / 12;
+
+      if (ageMonths < 18) return 'Infants/Ones';
+      if (ageMonths < 30) return 'Younger Toddlers';  // 18 months to 2.5 years
+      if (ageYears >= 5) return 'School-Age';
+      return 'Multi-Age';  // 2.5 to 5, not in GSRP/Strong Beginnings
+    }
+
     // Process by month
     const monthlyData = {};
 
     for (const row of records) {
       const dateStr = (row['Date'] || '').trim();
       const name = (row['Name'] || '').trim();
-      const classroom = (row['Check in classroom'] || '').trim() || 'No Classroom';
+      let classroom = (row['Check in classroom'] || '').trim();
+
+      // If no classroom assigned, determine by age
+      if (!classroom || classroom === 'No classroom') {
+        classroom = assignClassroomByAge(name, dateStr);
+      }
 
       if (!dateStr || !name) continue;
 
