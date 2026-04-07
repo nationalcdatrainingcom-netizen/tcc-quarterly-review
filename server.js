@@ -9,6 +9,31 @@ const { Pool } = require('pg');
 const multer = require('multer');
 const { parse } = require('csv-parse/sync');
 const fetch = require('node-fetch');
+const https = require('https');
+const http = require('http');
+
+// Google Apps Script redirect-safe fetch
+function fetchGoogleScript(url, maxRedirects = 5) {
+  return new Promise((resolve, reject) => {
+    if (maxRedirects <= 0) return reject(new Error('Too many redirects'));
+    
+    const client = url.startsWith('https') ? https : http;
+    client.get(url, { headers: { 'User-Agent': 'Mozilla/5.0' } }, (resp) => {
+      if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+        return fetchGoogleScript(resp.headers.location, maxRedirects - 1).then(resolve).catch(reject);
+      }
+      let body = '';
+      resp.on('data', chunk => body += chunk);
+      resp.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(new Error('Invalid JSON: ' + body.substring(0, 200)));
+        }
+      });
+    }).on('error', reject);
+  });
+}
 const path = require('path');
 
 const app = express();
@@ -106,8 +131,7 @@ app.get('/sso', (req, res) => {
 // ============================================================
 app.get('/api/report-data', async (req, res) => {
   try {
-    const response = await fetch(APPS_SCRIPT_URL, { redirect: 'follow' });
-    const data = await response.json();
+    const data = await fetchGoogleScript(APPS_SCRIPT_URL);
     res.json(data);
   } catch (err) {
     console.error('Error fetching report data:', err);
@@ -118,8 +142,7 @@ app.get('/api/report-data', async (req, res) => {
 // Debug endpoint — visit /api/debug?director=kirsten&quarter=1&year=2026
 app.get('/api/debug', async (req, res) => {
   try {
-    const response = await fetch(APPS_SCRIPT_URL, { redirect: 'follow' });
-    const data = await response.json();
+    const data = await fetchGoogleScript(APPS_SCRIPT_URL);
     
     const dirKey = req.query.director || 'kirsten';
     const quarter = parseInt(req.query.quarter) || 1;
