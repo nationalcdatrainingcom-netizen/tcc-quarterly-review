@@ -106,6 +106,19 @@ async function initDB() {
         uploaded_at TIMESTAMP DEFAULT NOW(),
         UNIQUE(center, upload_month)
       );
+
+      CREATE TABLE IF NOT EXISTS quarterly_reviews (
+        id SERIAL PRIMARY KEY,
+        director VARCHAR(50) NOT NULL,
+        quarter VARCHAR(10) NOT NULL,
+        strengths_narrative TEXT,
+        focus_areas TEXT,
+        goals JSONB,
+        metrics_snapshot JSONB,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(director, quarter)
+      );
     `);
     console.log('Database tables initialized');
   } finally {
@@ -366,6 +379,48 @@ app.get('/api/attendance/:director', async (req, res) => {
       [centerName]
     );
     res.json({ success: true, data: rows });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// ============================================================
+//  API: Quarterly Reviews (save/load narratives and goals)
+// ============================================================
+app.get('/api/reviews/:director', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM quarterly_reviews WHERE director = $1 ORDER BY quarter DESC',
+      [req.params.director]
+    );
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/reviews/:director/:quarter', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM quarterly_reviews WHERE director = $1 AND quarter = $2',
+      [req.params.director, req.params.quarter]
+    );
+    res.json({ success: true, data: rows[0] || null });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/reviews', async (req, res) => {
+  const { director, quarter, strengths_narrative, focus_areas, goals, metrics_snapshot } = req.body;
+  try {
+    await pool.query(`
+      INSERT INTO quarterly_reviews (director, quarter, strengths_narrative, focus_areas, goals, metrics_snapshot, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
+      ON CONFLICT (director, quarter)
+      DO UPDATE SET strengths_narrative = $3, focus_areas = $4, goals = $5, metrics_snapshot = $6, updated_at = NOW()
+    `, [director, quarter, strengths_narrative || '', focus_areas || '', JSON.stringify(goals || {}), JSON.stringify(metrics_snapshot || {})]);
+    res.json({ success: true });
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
