@@ -115,6 +115,67 @@ app.get('/api/report-data', async (req, res) => {
   }
 });
 
+// Debug endpoint — visit /api/debug?director=kirsten&quarter=1&year=2026
+app.get('/api/debug', async (req, res) => {
+  try {
+    const response = await fetch(APPS_SCRIPT_URL, { redirect: 'follow' });
+    const data = await response.json();
+    
+    const dirKey = req.query.director || 'kirsten';
+    const quarter = parseInt(req.query.quarter) || 1;
+    const year = parseInt(req.query.year) || 2026;
+    
+    const directors = {
+      kirsten: { center: 'Niles', location: 'Niles' },
+      gabby: { center: 'Peace Boulevard', location: 'Peace' },
+      shari: { center: 'Montessori', location: 'Montessori' }
+    };
+    const dir = directors[dirKey];
+    
+    // Parse rows into objects
+    const headers = data.headers || [];
+    const rows = (data.rows || []).map(row => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = row[i] || ''; });
+      return obj;
+    });
+    
+    // Get Program Location values
+    const allLocations = rows.map(r => r['Program Location']).filter(Boolean);
+    const uniqueLocations = [...new Set(allLocations)];
+    
+    // Filter by director
+    const dirRows = rows.filter(row => {
+      const loc = String(row['Program Location'] || '').toLowerCase();
+      return loc.includes(dir.center.toLowerCase()) || loc.includes(dir.location.toLowerCase());
+    });
+    
+    // Filter by quarter
+    const startMonth = (quarter - 1) * 3 + 1;
+    const qMonths = [startMonth, startMonth + 1, startMonth + 2];
+    const qRows = dirRows.filter(row => {
+      const ts = row['Timestamp'] || '';
+      const d = new Date(ts);
+      if (isNaN(d)) return false;
+      return qMonths.includes(d.getMonth() + 1) && d.getFullYear() === year;
+    });
+    
+    res.json({
+      totalApiRows: data.rows ? data.rows.length : 0,
+      headers: headers.slice(0, 5),
+      uniqueLocations,
+      directorConfig: dir,
+      directorFilteredCount: dirRows.length,
+      quarterFilteredCount: qRows.length,
+      complianceRowCount: data.compliance ? data.compliance.length : 'no compliance key',
+      sampleRow: qRows.length > 0 ? Object.fromEntries(Object.entries(qRows[0]).slice(0, 6)) : 'no rows found',
+      allTimestampsForDirector: dirRows.map(r => r['Timestamp']).slice(0, 10)
+    });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 // ============================================================
 //  API: Enrollment CRUD
 // ============================================================
