@@ -582,11 +582,10 @@ app.get('/api/reviews/:director/:quarter', async (req, res) => {
 app.post('/api/reviews', async (req, res) => {
   const { director, quarter, strengths_narrative, focus_areas, goals, metrics_snapshot, director_feedback, director_response } = req.body;
   try {
-    // Add columns if they don't exist (for existing databases)
     await pool.query(`ALTER TABLE quarterly_reviews ADD COLUMN IF NOT EXISTS director_feedback TEXT`).catch(() => {});
     await pool.query(`ALTER TABLE quarterly_reviews ADD COLUMN IF NOT EXISTS director_response JSONB`).catch(() => {});
+    await pool.query(`ALTER TABLE quarterly_reviews ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP`).catch(() => {});
     
-    // Merge director_response into goals for backward compatibility
     const mergedGoals = Object.assign({}, goals || {});
     if (director_response) mergedGoals.director_response = director_response;
     
@@ -597,6 +596,34 @@ app.post('/api/reviews', async (req, res) => {
       DO UPDATE SET strengths_narrative = $3, focus_areas = $4, goals = $5, metrics_snapshot = $6, director_feedback = $7, director_response = $8, updated_at = NOW()
     `, [director, quarter, strengths_narrative || '', focus_areas || '', JSON.stringify(mergedGoals), JSON.stringify(metrics_snapshot || {}), director_feedback || '', JSON.stringify(director_response || {})]);
     res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Archive a completed review
+app.post('/api/reviews/archive', async (req, res) => {
+  const { director, quarter } = req.body;
+  try {
+    await pool.query(`ALTER TABLE quarterly_reviews ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP`).catch(() => {});
+    await pool.query(
+      'UPDATE quarterly_reviews SET archived_at = NOW() WHERE director = $1 AND quarter = $2',
+      [director, quarter]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.json({ success: false, error: err.message });
+  }
+});
+
+// Get all archived reviews (across all directors)
+app.get('/api/reviews/archived/all', async (req, res) => {
+  try {
+    await pool.query(`ALTER TABLE quarterly_reviews ADD COLUMN IF NOT EXISTS archived_at TIMESTAMP`).catch(() => {});
+    const { rows } = await pool.query(
+      'SELECT director, quarter, strengths_narrative, focus_areas, goals, metrics_snapshot, director_feedback, director_response, archived_at, updated_at FROM quarterly_reviews WHERE archived_at IS NOT NULL ORDER BY archived_at DESC'
+    );
+    res.json({ success: true, data: rows });
   } catch (err) {
     res.json({ success: false, error: err.message });
   }
