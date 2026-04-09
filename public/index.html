@@ -728,12 +728,29 @@ body {
     <div class="compliance-grid" id="complianceGrid"></div>
 
     <!-- Attendance -->
-    <h2 class="section-title">Attendance Data <span class="line"></span></h2>
-    <div class="upload-panel" id="uploadPanel">
-      <h4>Upload Playground Attendance Export</h4>
-      <p>Drag & drop a CSV file or click to browse. The file will be processed automatically.</p>
-      <label class="btn-upload" for="attendanceFile">Choose CSV File</label>
-      <input type="file" id="attendanceFile" accept=".csv" onchange="handleAttendanceUpload(this)">
+    <h2 class="section-title">Attendance &amp; Enrollment Data <span class="line"></span></h2>
+    <div class="upload-panel" id="uploadPanel" style="text-align:left;">
+      <h4 style="text-align:center;">Upload Quarterly Reports</h4>
+      <p style="text-align:center;margin-bottom:16px;">Upload both files from Playground for the quarter. The ledger determines GSRP vs Private Pay enrollment.</p>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
+        <div style="flex:1;min-width:220px;background:var(--cream);border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-weight:800;font-size:0.82rem;color:var(--navy);margin-bottom:4px;">1. Attendance — Daily</div>
+          <div style="font-size:0.75rem;color:var(--text-light);margin-bottom:10px;">Reports → Attendance → Daily</div>
+          <label class="btn-upload" for="attendanceFile" style="font-size:0.8rem;">Choose Attendance CSV</label>
+          <input type="file" id="attendanceFile" accept=".csv">
+          <div id="attFileName" style="font-size:0.75rem;color:var(--teal);margin-top:6px;font-weight:700;"></div>
+        </div>
+        <div style="flex:1;min-width:220px;background:var(--cream);border-radius:8px;padding:16px;text-align:center;">
+          <div style="font-weight:800;font-size:0.82rem;color:var(--navy);margin-bottom:4px;">2. Ledger — Grouped</div>
+          <div style="font-size:0.75rem;color:var(--text-light);margin-bottom:10px;">Reports → Billing → Grouped Ledger</div>
+          <label class="btn-upload" for="ledgerFile" style="font-size:0.8rem;background:var(--teal);">Choose Ledger CSV</label>
+          <input type="file" id="ledgerFile" accept=".csv">
+          <div id="ledgerFileName" style="font-size:0.75rem;color:var(--teal);margin-top:6px;font-weight:700;"></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:16px;">
+        <button class="btn-generate" onclick="handleAttendanceUpload()" id="btnUploadProcess">Process Files</button>
+      </div>
       <div class="upload-result" id="uploadResult"></div>
     </div>
     <div id="attendanceData"></div>
@@ -1419,16 +1436,11 @@ function renderAttendanceData(data, qMonths) {
     return;
   }
 
-  var html = '<div class="metrics-wrap"><table><thead><tr><th>Month</th><th>Total Children</th><th>6+ Days</th>';
+  // Fixed 3 categories in consistent order
+  var categories = ['Under 2½', 'Over 2½ Private Pay', 'GSRP'];
 
-  // Get all classrooms across the quarter
-  var allClassrooms = new Set();
-  qData.forEach(function(r) {
-    var bd = r.classroom_breakdown || {};
-    Object.keys(bd).forEach(function(c) { allClassrooms.add(c); });
-  });
-  var classrooms = Array.from(allClassrooms).sort();
-  classrooms.forEach(function(c) { html += '<th>' + esc(c) + '</th>'; });
+  var html = '<div class="metrics-wrap"><table><thead><tr><th>Month</th><th>Total Children</th><th>6+ Days</th>';
+  categories.forEach(function(c) { html += '<th>' + esc(c) + '</th>'; });
   html += '</tr></thead><tbody>';
 
   qData.sort(function(a, b) { return a.upload_month.localeCompare(b.upload_month); });
@@ -1439,7 +1451,7 @@ function renderAttendanceData(data, qMonths) {
     html += '<tr><td>' + monthNames[mn] + ' ' + parts[0] + '</td>';
     html += '<td>' + r.total_children + '</td>';
     html += '<td>' + r.children_6plus + '</td>';
-    classrooms.forEach(function(c) { html += '<td>' + (bd[c] || 0) + '</td>'; });
+    categories.forEach(function(c) { html += '<td>' + (bd[c] || 0) + '</td>'; });
     html += '</tr>';
   });
 
@@ -2046,14 +2058,23 @@ async function saveLicense(dirKey, qStr) {
 // ============================================================
 //  ATTENDANCE UPLOAD
 // ============================================================
-async function handleAttendanceUpload(input) {
-  if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
+async function handleAttendanceUpload() {
+  var attInput = document.getElementById('attendanceFile');
+  var ledgerInput = document.getElementById('ledgerFile');
+
+  if (!attInput.files || !attInput.files[0]) {
+    toast('Please select an attendance file first', 'error');
+    return;
+  }
+
   var dirKey = document.getElementById('selDirector').value;
   var dir = DIRECTORS[dirKey];
 
   var formData = new FormData();
-  formData.append('file', file);
+  formData.append('attendance', attInput.files[0]);
+  if (ledgerInput.files && ledgerInput.files[0]) {
+    formData.append('ledger', ledgerInput.files[0]);
+  }
   formData.append('director', dirKey);
   formData.append('center', dir.center);
 
@@ -2061,6 +2082,7 @@ async function handleAttendanceUpload(input) {
   resultDiv.className = 'upload-result';
   resultDiv.style.display = 'block';
   resultDiv.textContent = 'Processing...';
+  document.getElementById('btnUploadProcess').disabled = true;
 
   try {
     var res = await fetch('/api/attendance/upload', { method: 'POST', body: formData });
@@ -2071,12 +2093,14 @@ async function handleAttendanceUpload(input) {
       data.months.forEach(function(m) {
         html += '• ' + m.month + ': ' + m.totalChildren + ' total children, ' + m.children6plus + ' with 6+ days<br>';
       });
-      // Show enrollment auto-population results
       if (data.enrollment && data.enrollment.length > 0) {
         html += '<br><strong>Enrollment auto-updated:</strong><br>';
         data.enrollment.forEach(function(e) {
           html += '• ' + e.quarter + ': ' + e.totalEnrolled + ' enrolled (' + e.gsrpEnrolled + ' GSRP, ' + e.nonGsrpEnrolled + ' Non-GSRP)<br>';
         });
+      }
+      if (!ledgerInput.files || !ledgerInput.files[0]) {
+        html += '<br><em style="opacity:0.8;">Note: No ledger uploaded — GSRP/Non-GSRP split is based on age only. Upload a Grouped Ledger for accurate GSRP counts.</em>';
       }
       resultDiv.innerHTML = html;
       resultDiv.className = 'upload-result success';
@@ -2105,7 +2129,9 @@ async function handleAttendanceUpload(input) {
     resultDiv.className = 'upload-result error';
   }
 
-  input.value = '';
+  document.getElementById('btnUploadProcess').disabled = false;
+  attInput.value = '';
+  ledgerInput.value = '';
 }
 
 // ============================================================
@@ -2131,20 +2157,20 @@ function esc(s) {
   return d.innerHTML;
 }
 
-// Drag and drop support for upload
+// File name display listeners
 document.addEventListener('DOMContentLoaded', function() {
-  var panel = document.getElementById('uploadPanel');
-  if (panel) {
-    panel.addEventListener('dragover', function(e) { e.preventDefault(); panel.classList.add('drag-over'); });
-    panel.addEventListener('dragleave', function() { panel.classList.remove('drag-over'); });
-    panel.addEventListener('drop', function(e) {
-      e.preventDefault();
-      panel.classList.remove('drag-over');
-      if (e.dataTransfer.files.length > 0) {
-        var input = document.getElementById('attendanceFile');
-        input.files = e.dataTransfer.files;
-        handleAttendanceUpload(input);
-      }
+  var attInput = document.getElementById('attendanceFile');
+  var ledgerInput = document.getElementById('ledgerFile');
+  if (attInput) {
+    attInput.addEventListener('change', function() {
+      var el = document.getElementById('attFileName');
+      if (el) el.textContent = this.files[0] ? '✓ ' + this.files[0].name : '';
+    });
+  }
+  if (ledgerInput) {
+    ledgerInput.addEventListener('change', function() {
+      var el = document.getElementById('ledgerFileName');
+      if (el) el.textContent = this.files[0] ? '✓ ' + this.files[0].name : '';
     });
   }
 });
