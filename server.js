@@ -472,7 +472,7 @@ app.post('/api/attendance/upload', uploadFields, async (req, res) => {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (center, upload_month)
         DO UPDATE SET director = $1, filename = $4, total_children = $5, children_6plus = $6, classroom_breakdown = $7, raw_summary = $8, uploaded_at = NOW()
-      `, [director, center, monthKey, req.file.originalname, totalChildren, children6plus, JSON.stringify(classroomCounts), JSON.stringify(rawSummary)]);
+      `, [director, center, monthKey, attFile.originalname, totalChildren, children6plus, JSON.stringify(classroomCounts), JSON.stringify(rawSummary)]);
 
       results.push({ month: monthKey, totalChildren, children6plus, classrooms: classroomCounts });
     }
