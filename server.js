@@ -409,18 +409,35 @@ app.post('/api/attendance/upload', uploadFields, async (req, res) => {
       monthlyData[monthKey].childClassroom[name] = classroom;
     }
 
+    // GSRP classroom patterns — children in these rooms count as GSRP
+    const GSRP_CLASSROOMS = [
+      'gsrp', 'dino', 'penguin',                     // Peace
+      'strong beginning',                              // Niles (similar funding)
+      // Niles GSRP rooms already have "gsrp" in name (GSRP - 1, GSRP - 2)
+      // Montessori GSRP rooms already have "gsrp" in name (GSRP Orange, Blue, Pink)
+    ];
+
+    // Build a master classroom lookup (most recent classroom per child across all months)
+    const masterClassroom = {};
+    for (const [monthKey, data] of Object.entries(monthlyData)) {
+      for (const [name, cls] of Object.entries(data.childClassroom)) {
+        masterClassroom[name] = cls;
+      }
+    }
+
     // Categorize child into 3 enrollment groups
-    // GSRP is determined by the ledger (billing items), NOT by classroom name
-    function categorizeChild(childName) {
-      // Check ledger first — this is the definitive GSRP source
-      if (gsrpChildren.size > 0 && gsrpChildren.has((childName || '').toLowerCase())) {
+    // GSRP is determined by: (1) ledger billing items, OR (2) classroom name
+    function categorizeChild(childName, classroom) {
+      var cls = (classroom || masterClassroom[childName] || '').toLowerCase();
+
+      // Check ledger — GSRP billing item
+      if (gsrpChildren.has((childName || '').toLowerCase())) {
         return 'GSRP';
       }
 
-      // If no ledger uploaded, fall back to classroom name for GSRP detection
-      if (gsrpChildren.size === 0) {
-        const cls = (childDOB[childName] ? '' : '').toLowerCase(); // no fallback without ledger
-        // Without a ledger we can't determine GSRP, so put in age-based category
+      // Check classroom name against GSRP patterns
+      if (cls && GSRP_CLASSROOMS.some(function(pattern) { return cls.includes(pattern); })) {
+        return 'GSRP';
       }
 
       // Age-based categorization for non-GSRP children
