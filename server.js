@@ -54,7 +54,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 
 // --- Config ---
 const APPS_SCRIPT_URL = process.env.APPS_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbx2mTbh-DXop6eyN8fIpN-3puI9BM3-osSwjMT20C4-gVg_psXEGe-jBUir3KQxzqQ/exec';
-const HUB_SECRET = process.env.HUB_SECRET || 'tcc-hub-2025';
+const HUB_SECRET = process.env.LEADER_REVIEW_HUB_SECRET || 'tcc-hub-2025';
 
 // Directors config
 const DIRECTORS = {
