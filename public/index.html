@@ -1554,6 +1554,9 @@ function renderComplianceChart(qRows, qMonths) {
 }
 
 function renderEnrollmentChart(enrollData) {
+  // Destroy existing chart if it exists
+  if (CHARTS.enrollment) { CHARTS.enrollment.destroy(); CHARTS.enrollment = null; }
+  
   var ctx = document.getElementById('chartEnrollment');
   if (!ctx) return;
   if (!enrollData || enrollData.length === 0) {
