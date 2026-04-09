@@ -2071,16 +2071,31 @@ async function handleAttendanceUpload(input) {
       data.months.forEach(function(m) {
         html += '• ' + m.month + ': ' + m.totalChildren + ' total children, ' + m.children6plus + ' with 6+ days<br>';
       });
+      // Show enrollment auto-population results
+      if (data.enrollment && data.enrollment.length > 0) {
+        html += '<br><strong>Enrollment auto-updated:</strong><br>';
+        data.enrollment.forEach(function(e) {
+          html += '• ' + e.quarter + ': ' + e.totalEnrolled + ' enrolled (' + e.gsrpEnrolled + ' GSRP, ' + e.nonGsrpEnrolled + ' Non-GSRP)<br>';
+        });
+      }
       resultDiv.innerHTML = html;
       resultDiv.className = 'upload-result success';
-      toast('Attendance uploaded!', 'success');
+      toast('Attendance & enrollment updated!', 'success');
 
       // Refresh attendance display
       var attendRes = await fetch('/api/attendance/' + dirKey).then(function(r) { return r.json(); });
       var qVal = document.getElementById('selQuarter').value;
       var parts = qVal.split('-');
+      var qStr = 'Q' + parts[0] + ' ' + parts[1];
       var qMonths = getQuarterMonths(parseInt(parts[0]), parseInt(parts[1]));
       renderAttendanceData(attendRes.data || [], qMonths);
+
+      // Refresh enrollment card with new data
+      var enrollRes = await fetch('/api/enrollment/' + dirKey).then(function(r) { return r.json(); });
+      renderEnrollmentCard(dirKey, qStr, enrollRes.data || []);
+
+      // Refresh enrollment chart
+      renderEnrollmentChart(enrollRes.data || []);
     } else {
       resultDiv.textContent = 'Error: ' + data.error;
       resultDiv.className = 'upload-result error';
