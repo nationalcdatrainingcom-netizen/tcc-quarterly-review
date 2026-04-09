@@ -417,7 +417,59 @@ app.post('/api/attendance/upload', upload.single('file'), async (req, res) => {
       results.push({ month: monthKey, totalChildren, children6plus, classrooms: classroomCounts });
     }
 
-    res.json({ success: true, months: results });
+    // === AUTO-POPULATE ENROLLMENT from attendance data ===
+    // Group all months by quarter and compute enrollment numbers
+    const quarterGroups = {};
+    for (const [monthKey, data] of Object.entries(monthlyData)) {
+      const [yr, mn] = monthKey.split('-').map(Number);
+      const q = Math.ceil(mn / 3);
+      const qKey = `Q${q} ${yr}`;
+      if (!quarterGroups[qKey]) {
+        quarterGroups[qKey] = { childDays: {}, childClassroom: {} };
+      }
+      // Merge child days across months in the same quarter
+      for (const [name, days] of Object.entries(data.childDays)) {
+        if (!quarterGroups[qKey].childDays[name]) {
+          quarterGroups[qKey].childDays[name] = new Set();
+        }
+        days.forEach(d => quarterGroups[qKey].childDays[name].add(d));
+        // Keep the most recent classroom assignment
+        quarterGroups[qKey].childClassroom[name] = data.childClassroom[name];
+      }
+    }
+
+    // For each quarter found in the upload, calculate and save enrollment
+    const enrollmentResults = [];
+    for (const [qKey, qData] of Object.entries(quarterGroups)) {
+      // Children who attended more than 3 days in the quarter = enrolled
+      const enrolledChildren = Object.entries(qData.childDays)
+        .filter(([_, days]) => days.size > 3);
+      
+      const totalEnrolled = enrolledChildren.length;
+      let gsrpEnrolled = 0;
+      let nonGsrpEnrolled = 0;
+
+      for (const [name, _] of enrolledChildren) {
+        const cls = (qData.childClassroom[name] || '').toLowerCase();
+        if (cls.includes('gsrp')) {
+          gsrpEnrolled++;
+        } else {
+          nonGsrpEnrolled++;
+        }
+      }
+
+      // Save to enrollment_data
+      await pool.query(`
+        INSERT INTO enrollment_data (director, quarter, total_enrolled, non_gsrp_enrolled, gsrp_enrolled, updated_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+        ON CONFLICT (director, quarter)
+        DO UPDATE SET total_enrolled = $3, non_gsrp_enrolled = $4, gsrp_enrolled = $5, updated_at = NOW()
+      `, [director, qKey, totalEnrolled, nonGsrpEnrolled, gsrpEnrolled]);
+
+      enrollmentResults.push({ quarter: qKey, totalEnrolled, gsrpEnrolled, nonGsrpEnrolled });
+    }
+
+    res.json({ success: true, months: results, enrollment: enrollmentResults });
   } catch (err) {
     console.error('Attendance upload error:', err);
     res.json({ success: false, error: err.message });
