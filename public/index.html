@@ -693,6 +693,16 @@ body {
       <select id="selQuarter"></select>
     </div>
     <button class="btn-generate" id="btnGenerate" onclick="generateReview()">Generate Review</button>
+    <button class="btn-generate" style="background:var(--teal);" onclick="openArchive()">📁 Archive</button>
+  </div>
+
+  <!-- Archive Panel (hidden until opened) -->
+  <div id="archivePanel" class="hidden">
+    <div class="action-bar">
+      <button class="action-btn dark" onclick="closeArchive()">← Back to Menu</button>
+    </div>
+    <h2 class="section-title">Review Archive <span class="line"></span></h2>
+    <div id="archiveList" style="margin-bottom:40px;"></div>
   </div>
 
   <!-- Loading -->
@@ -830,7 +840,8 @@ body {
       </div>
 
       <div class="no-print" style="margin-top:20px;">
-        <button class="action-btn gold" id="btnSaveResponse" onclick="saveDirectorResponse()">💾 Save Director Response</button>
+        <button class="action-btn gold" id="btnSaveResponse" onclick="saveDirectorResponse()">💾 Save Draft</button>
+        <button class="action-btn accent" id="btnArchive" onclick="saveAndArchive()">📁 Save &amp; Archive (Finalize)</button>
         <span id="responseSaveStatus" style="font-size:0.82rem;color:var(--text-light);margin-left:12px;"></span>
       </div>
     </div>
@@ -2009,6 +2020,16 @@ async function loadCurrentReview(dirKey, qStr) {
     }
 
     document.getElementById('responseSaveStatus').textContent = '(previously saved ' + new Date(d.updated_at).toLocaleDateString() + ')';
+    
+    // Check if already archived
+    if (d.archived_at) {
+      var archBtn = document.getElementById('btnArchive');
+      if (archBtn) {
+        archBtn.disabled = true;
+        archBtn.textContent = '✓ Archived ' + new Date(d.archived_at).toLocaleDateString();
+      }
+      document.getElementById('responseSaveStatus').textContent = '✓ Archived on ' + new Date(d.archived_at).toLocaleDateString();
+    }
   } catch (err) {
     // Silently fail
   }
@@ -2132,6 +2153,130 @@ async function handleAttendanceUpload() {
   document.getElementById('btnUploadProcess').disabled = false;
   attInput.value = '';
   ledgerInput.value = '';
+}
+
+// ============================================================
+//  ARCHIVE
+// ============================================================
+async function saveAndArchive() {
+  // First save the response
+  await saveDirectorResponse();
+
+  var dirKey = document.getElementById('selDirector').value;
+  var qVal = document.getElementById('selQuarter').value;
+  var parts = qVal.split('-');
+  var qStr = 'Q' + parts[0] + ' ' + parts[1];
+
+  // Then archive it
+  try {
+    var res = await fetch('/api/reviews/archive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ director: dirKey, quarter: qStr })
+    });
+    var result = await res.json();
+    if (result.success) {
+      toast('Review archived!', 'success');
+      document.getElementById('responseSaveStatus').textContent = '✓ Archived — this review is finalized';
+      document.getElementById('btnArchive').disabled = true;
+      document.getElementById('btnArchive').textContent = '✓ Archived';
+    } else {
+      toast('Archive failed: ' + result.error, 'error');
+    }
+  } catch (err) {
+    toast('Archive failed', 'error');
+  }
+}
+
+async function openArchive() {
+  document.getElementById('reportContent').classList.add('hidden');
+  document.getElementById('archivePanel').classList.remove('hidden');
+  document.getElementById('selectorPanel').style.display = 'none';
+
+  var listDiv = document.getElementById('archiveList');
+  listDiv.innerHTML = '<div class="loading"><div class="spinner"></div>Loading archive...</div>';
+
+  try {
+    var res = await fetch('/api/reviews/archived/all');
+    var result = await res.json();
+
+    if (!result.success || !result.data || result.data.length === 0) {
+      listDiv.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">No archived reviews yet. Generate a review, complete the Director Response, and click "Save & Archive" to finalize it.</div>';
+      return;
+    }
+
+    var dirNames = { kirsten: 'Kirsten — Niles', gabby: 'Gabby — Peace', shari: 'Shari — Montessori' };
+    var html = '';
+
+    result.data.forEach(function(review) {
+      var dirLabel = dirNames[review.director] || review.director;
+      var archivedDate = new Date(review.archived_at).toLocaleDateString();
+      var metrics = review.metrics_snapshot || {};
+      var goals = review.goals || {};
+      var dr = review.director_response || {};
+      if (typeof goals === 'string') { try { goals = JSON.parse(goals); } catch(e) {} }
+      if (typeof dr === 'string') { try { dr = JSON.parse(dr); } catch(e) {} }
+      if (typeof metrics === 'string') { try { metrics = JSON.parse(metrics); } catch(e) {} }
+
+      html += '<div class="info-card" style="margin-bottom:16px;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">';
+      html += '<div><h3 style="margin-bottom:2px;">' + esc(dirLabel) + '</h3>';
+      html += '<span class="tag tag-teal">' + esc(review.quarter) + '</span> ';
+      html += '<span style="font-size:0.75rem;color:var(--text-muted);">Archived ' + archivedDate + '</span></div>';
+      html += '</div>';
+
+      // Key metrics summary
+      if (metrics.overall_rate !== undefined) {
+        html += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px;">';
+        html += '<div style="font-size:0.8rem;"><strong>Overall:</strong> ' + (metrics.overall_rate || 0) + '%</div>';
+        html += '<div style="font-size:0.8rem;"><strong>Reports:</strong> ' + (metrics.reports_submitted || 0) + '/' + (metrics.total_fridays || 0) + '</div>';
+        html += '<div style="font-size:0.8rem;"><strong>N2F:</strong> ' + (metrics.n2f || 0) + '%</div>';
+        html += '<div style="font-size:0.8rem;"><strong>Social:</strong> ' + (metrics.social || 0) + '%</div>';
+        html += '<div style="font-size:0.8rem;"><strong>1-on-1:</strong> ' + (metrics.one_on_one || 0) + '%</div>';
+        html += '</div>';
+      }
+
+      // Strengths
+      if (review.strengths_narrative) {
+        html += '<div style="font-size:0.82rem;margin-bottom:8px;"><strong>Strengths:</strong> ' + esc(review.strengths_narrative) + '</div>';
+      }
+
+      // Focus areas
+      if (goals.focus_metrics && goals.focus_metrics.length > 0) {
+        html += '<div style="font-size:0.82rem;margin-bottom:8px;"><strong>Focus Areas:</strong> ';
+        html += goals.focus_metrics.map(function(f) { return esc(f.label) + ' (' + f.rate + '%)'; }).join(', ');
+        html += '</div>';
+      }
+
+      // Director responses
+      if (dr.going_well) {
+        html += '<div style="font-size:0.82rem;margin-bottom:4px;"><strong>Going well:</strong> "' + esc(dr.going_well.substring(0, 200)) + '"</div>';
+      }
+      if (dr.growth_goal) {
+        html += '<div style="font-size:0.82rem;margin-bottom:4px;"><strong>Growth goal:</strong> "' + esc(dr.growth_goal.substring(0, 200)) + '"</div>';
+      }
+      if (dr.feedback_to_owner || review.director_feedback) {
+        var fb = dr.feedback_to_owner || review.director_feedback;
+        html += '<div style="font-size:0.82rem;margin-bottom:4px;"><strong>Support requested:</strong> "' + esc(fb.substring(0, 200)) + '"</div>';
+      }
+
+      // Signed copy link
+      html += '<div style="margin-top:8px;">';
+      html += '<a href="/api/signed-review/' + review.director + '/' + encodeURIComponent(review.quarter) + '/download" target="_blank" style="font-size:0.8rem;color:var(--teal);font-weight:700;text-decoration:none;">View Signed Copy →</a>';
+      html += '</div>';
+
+      html += '</div>';
+    });
+
+    listDiv.innerHTML = html;
+  } catch (err) {
+    listDiv.innerHTML = '<div style="text-align:center;color:var(--red);padding:20px;">Error loading archive: ' + err.message + '</div>';
+  }
+}
+
+function closeArchive() {
+  document.getElementById('archivePanel').classList.add('hidden');
+  document.getElementById('selectorPanel').style.display = '';
 }
 
 // ============================================================
