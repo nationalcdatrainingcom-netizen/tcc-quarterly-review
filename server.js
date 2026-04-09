@@ -274,14 +274,38 @@ app.post('/api/license', async (req, res) => {
 });
 
 // ============================================================
-//  API: Attendance CSV Upload & Processing
+//  API: Attendance & Ledger Upload & Processing
 // ============================================================
-app.post('/api/attendance/upload', upload.single('file'), async (req, res) => {
+const uploadFields = upload.fields([
+  { name: 'attendance', maxCount: 1 },
+  { name: 'ledger', maxCount: 1 }
+]);
+
+app.post('/api/attendance/upload', uploadFields, async (req, res) => {
   try {
-    if (!req.file) return res.json({ success: false, error: 'No file uploaded' });
+    const attFile = req.files && req.files['attendance'] && req.files['attendance'][0];
+    const ledgerFile = req.files && req.files['ledger'] && req.files['ledger'][0];
+
+    if (!attFile) return res.json({ success: false, error: 'No attendance file uploaded' });
 
     const { director, center } = req.body;
-    const csvText = req.file.buffer.toString('utf-8').replace(/^\uFEFF/, '');
+
+    // --- PARSE LEDGER (if provided) to build GSRP roster ---
+    const gsrpChildren = new Set();
+    if (ledgerFile) {
+      const ledgerText = ledgerFile.buffer.toString('utf-8').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+      const ledgerRecords = parse(ledgerText, { columns: true, skip_empty_lines: true, relax_column_count: true });
+      for (const row of ledgerRecords) {
+        const name = (row['name'] || '').trim();
+        const item = (row['itemName'] || '').trim();
+        if (name && item.toLowerCase().includes('gsrp')) {
+          gsrpChildren.add(name.toLowerCase());
+        }
+      }
+    }
+
+    // --- PARSE ATTENDANCE ---
+    const csvText = attFile.buffer.toString('utf-8').replace(/^\uFEFF/, '');
     const lines = csvText.split('\n');
 
     // Detect Playground CSV format (has school info header row)
@@ -385,6 +409,41 @@ app.post('/api/attendance/upload', upload.single('file'), async (req, res) => {
       monthlyData[monthKey].childClassroom[name] = classroom;
     }
 
+    // Categorize child into 3 enrollment groups
+    // GSRP is determined by the ledger (billing items), NOT by classroom name
+    function categorizeChild(childName) {
+      // Check ledger first — this is the definitive GSRP source
+      if (gsrpChildren.size > 0 && gsrpChildren.has((childName || '').toLowerCase())) {
+        return 'GSRP';
+      }
+
+      // If no ledger uploaded, fall back to classroom name for GSRP detection
+      if (gsrpChildren.size === 0) {
+        const cls = (childDOB[childName] ? '' : '').toLowerCase(); // no fallback without ledger
+        // Without a ledger we can't determine GSRP, so put in age-based category
+      }
+
+      // Age-based categorization for non-GSRP children
+      const dob = childDOB[childName];
+      if (dob) {
+        let dobDate;
+        if (dob.includes(',')) {
+          dobDate = new Date(dob);
+        } else {
+          const parts = dob.split('/');
+          if (parts.length === 3) dobDate = new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+          else dobDate = new Date(dob);
+        }
+        if (!isNaN(dobDate)) {
+          const now = new Date();
+          const ageMonths = (now.getFullYear() - dobDate.getFullYear()) * 12 + (now.getMonth() - dobDate.getMonth());
+          if (ageMonths < 30) return 'Under 2½';
+        }
+      }
+
+      return 'Over 2½ Private Pay';
+    }
+
     // Save each month to database
     const results = [];
     for (const [monthKey, data] of Object.entries(monthlyData)) {
@@ -392,19 +451,20 @@ app.post('/api/attendance/upload', upload.single('file'), async (req, res) => {
       const children6plus = Object.entries(data.childDays)
         .filter(([_, days]) => days.size >= 6).length;
 
-      // Classroom breakdown for 6+ day children
+      // Classroom breakdown for 6+ day children — using 3 categories
       const classroomCounts = {};
       for (const [name, days] of Object.entries(data.childDays)) {
         if (days.size >= 6) {
-          const cls = data.childClassroom[name] || 'No Classroom';
-          classroomCounts[cls] = (classroomCounts[cls] || 0) + 1;
+          const cls = data.childClassroom[name] || '';
+          const category = categorizeChild(name);
+          classroomCounts[category] = (classroomCounts[category] || 0) + 1;
         }
       }
 
       // Summary with all children day counts
       const rawSummary = {};
       for (const [name, days] of Object.entries(data.childDays)) {
-        rawSummary[name] = { days: days.size, classroom: data.childClassroom[name] };
+        rawSummary[name] = { days: days.size, classroom: data.childClassroom[name], category: categorizeChild(name) };
       }
 
       await pool.query(`
@@ -450,8 +510,9 @@ app.post('/api/attendance/upload', upload.single('file'), async (req, res) => {
       let nonGsrpEnrolled = 0;
 
       for (const [name, _] of enrolledChildren) {
-        const cls = (qData.childClassroom[name] || '').toLowerCase();
-        if (cls.includes('gsrp')) {
+        const cls = qData.childClassroom[name] || '';
+        const category = categorizeChild(name);
+        if (category === 'GSRP') {
           gsrpEnrolled++;
         } else {
           nonGsrpEnrolled++;
